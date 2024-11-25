@@ -1,3 +1,15 @@
+#Functions that are not base R functions
+#optiSel::candes
+#dplyr::left_join
+#optiSel::pedIBD
+#optiSel::prePed
+
+#run_OC_max_EBV
+#get_best_indiv
+#get_fam_K_matrix
+
+
+
 #Function to optimise contributions at family level
 optiSelFam  <- function(candidate_parents,
                         indiv_contbn,
@@ -98,8 +110,8 @@ optiSelFam  <- function(candidate_parents,
     ped$isCandidate <- ped$Indiv %in% candidate_parents$Indiv
 
     keep = ped[ped$isCandidate | !ped$Mature,"Indiv"] #keep if isCandidate or is immature
-    Pedig <- prePed(Pedig = ped, keep = keep) #keep if isCandidate or is immature
-    fPED <- pedIBD(Pedig, keep.only = keep)
+    Pedig <- optiSel::prePed(Pedig = ped, keep = keep) #keep if isCandidate or is immature
+    fPED <- optiSel::pedIBD(Pedig, keep.only = keep)
 
     #replace immature year classes with family K matrix as per Hamilton paper
     fam_K <- get_fam_K_matrix(Pedig, Pedig[!Pedig$Mature,"Indiv"])
@@ -118,7 +130,7 @@ optiSelFam  <- function(candidate_parents,
     Pedig[Pedig$Born == min(Pedig[Pedig$AVAIL_OR_PAST_BROOD, "Born"]), "oldest_age_r_vector"] <- 1 #oldest YC to 1
     Pedig$oldest_age_r_vector_2 <- Pedig$oldest_age_r_vector
 
-    cand <- candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
+    cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
                    fPED=fPED,
                    cont = cont)
 
@@ -130,9 +142,9 @@ optiSelFam  <- function(candidate_parents,
 
   if(overlapping_gens == FALSE) {
 
-    Pedig <- prePed(Pedig = ped, keep = candidate_parents$Indiv)
+    Pedig <- optiSel::prePed(Pedig = ped, keep = candidate_parents$Indiv)
 
-    fPED <- pedIBD(Pedig, keep.only = candidate_parents$Indiv)
+    fPED <- optiSel::pedIBD(Pedig, keep.only = candidate_parents$Indiv)
 
     Sy <- summary(Pedig)
     Pedig <- merge(Pedig, Sy[, c("Indiv", "equiGen")], on="Indiv")
@@ -140,7 +152,7 @@ optiSelFam  <- function(candidate_parents,
     cont <- data.frame(age = 1,
                        male = 0.5,
                        female = 0.5)
-    cand <- candes(phen=Pedig[Pedig$Indiv %in% candidate_parents$Indiv,],
+    cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% candidate_parents$Indiv,],
                    fPED=fPED,
                    cont = cont)
 
@@ -371,9 +383,9 @@ optiSelFam  <- function(candidate_parents,
   Pedig <- rbind(ped[ped$GENERATION !=  max(ped$Born), ], #c("Indiv", "Sire", "Dam")
                  ped[ped$Indiv %in% cand_parents_fixed,]) #c("Indiv", "Sire", "Dam")
 
-  Pedig <- prePed(Pedig = Pedig, keep = cand_parents_fixed)
+  Pedig <- optiSel::prePed(Pedig = Pedig, keep = cand_parents_fixed)
 
-  A_mat <- pedIBD(Pedig, keep.only = cand_parents_fixed)
+  A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed)
 
   A_mat <-  A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
@@ -407,7 +419,7 @@ optiSelFam  <- function(candidate_parents,
 
   parent_contbn <- ped[ped$Indiv %in% indivs_to_retain,]
   parent_contbn[is.na(parent_contbn$Contbn_count),"Contbn_count"] <- 0
-  parent_contbn <- left_join(parent_contbn, tmp, by = "Indiv")
+  parent_contbn <- dplyr::left_join(parent_contbn, tmp, by = "Indiv")
 
   #if insufficient individuals then what???????????????????????????????????????????????
 
@@ -417,7 +429,7 @@ optiSelFam  <- function(candidate_parents,
   fam_contbn         <- aggregate(parent_contbn$N_TOTAL_AS_PARENT, by = list(parent_contbn$Fam), FUN = "sum")
   colnames(fam_contbn) <- c("FAM", "N_INDIV_TOTAL")
   fam_contbn$N_INDIV_TOTAL <- round(fam_contbn$N_INDIV_TOTAL,6)
-  fam_contbn <- left_join(fam_contbn, fam_contbn_parents, by = "FAM")
+  fam_contbn <- dplyr::left_join(fam_contbn, fam_contbn_parents, by = "FAM")
   fam_contbn$N_INDIV <- fam_contbn$N_INDIV_TOTAL - fam_contbn$N_AS_PAST_PARENT
   fam_contbn
 
