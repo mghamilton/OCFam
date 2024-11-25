@@ -1,0 +1,18 @@
+Package: optiSelFam
+Type: Package
+Title: Optimal Contribrutions Selection For Highly Fecund Species
+Version: 1.0
+Author: Matthew Gray Hamilton <matthewhamilton75@gmail.com>
+Maintainer: Matthew Gray Hamilton <matthewhamilton75@gmail.com>
+Description: optiSelFam
+    Implements method of Hamilton (2020)
+    Minimises impact of rounding optimal contributions in highly fecund species in which relatively small numbers of parents are utilised
+    Implements optimal contributions for overlapping generations
+License: CC BY-NC 4.0
+Depends: R (>= 4.0.0)
+Imports:
+    optiSel,
+    dplyr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
