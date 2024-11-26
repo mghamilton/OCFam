@@ -1,14 +1,13 @@
 #Functions that are not base R functions
-#optiSel::candes
-#dplyr::left_join
-#optiSel::pedIBD
-#optiSel::prePed
+# dplyr::left_join
+# optiSel::candes
+# optiSel::pedIBD
+# optiSel::prePed
+# optiSelFam::run_OC_max_EBV
+# optiSelFam::get_best_indiv
+# optiSelFam::get_fam_K_matrix
 
-#run_OC_max_EBV
-#get_best_indiv
-#get_fam_K_matrix
-
-
+#Required packages: optiSel, dplyr, AGHmatrix
 
 #Function to optimise contributions at family level
 optiSelFam  <- function(candidate_parents,
@@ -114,7 +113,7 @@ optiSelFam  <- function(candidate_parents,
     fPED <- optiSel::pedIBD(Pedig, keep.only = keep)
 
     #replace immature year classes with family K matrix as per Hamilton paper
-    fam_K <- get_fam_K_matrix(Pedig, Pedig[!Pedig$Mature,"Indiv"])
+    fam_K <- optiSelFam::get_fam_K_matrix(Pedig, Pedig[!Pedig$Mature,"Indiv"])
     fPED[rownames(fam_K),colnames(fam_K)] <- fam_K
 
     # Pedig <- Pedig[Pedig$Indiv %in% colnames(fPED),]
@@ -195,7 +194,7 @@ optiSelFam  <- function(candidate_parents,
 
   # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$Contbn_count),"Indiv"], "Fam"])
 
-  fam_K_matrix <- get_fam_K_matrix(ped = ped,
+  fam_K_matrix <- optiSelFam::get_fam_K_matrix(ped = ped,
                                    cand_fams = cand_fams)
   print(fam_K_matrix)
   mean(fam_K_matrix)
@@ -235,7 +234,7 @@ optiSelFam  <- function(candidate_parents,
 
 
 
-  additional_parents_fixed <- get_best_indiv(fish = ped[ped$AVAIL_BROOD ,], #exclude animals previously used as parents
+  additional_parents_fixed <- optiSelFam::get_best_indiv(fish = ped[ped$AVAIL_BROOD ,], #exclude animals previously used as parents
                                              additional_fams_to_retain = additional_fams_to_retain,
                                              candidate_parents = candidate_parents[!candidate_parents$Exclude_max_parents_per_fam,"Indiv"])
   ub[names(ub) %in% additional_parents_fixed] <- indiv_contbn
@@ -248,7 +247,7 @@ optiSelFam  <- function(candidate_parents,
   #2. identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
   ################################################################################
 
-  fit <- run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
+  fit <- optiSelFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                         ub = ub, lb = lb, opticont_method = opticont_method)
 
 
@@ -324,7 +323,7 @@ optiSelFam  <- function(candidate_parents,
             fam_contbn_not_fixed[fam_contbn_not_fixed$Fam %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
           max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
-          cand_parents_fixed_current_iteration <- get_best_indiv(fish = cand_parents_not_fixed,
+          cand_parents_fixed_current_iteration <- optiSelFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                  additional_fams_to_retain = fams_to_retain,
                                                                  candidate_parents = candidate_parents[is.na(candidate_parents$Contbn_count),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
 
@@ -338,7 +337,7 @@ optiSelFam  <- function(candidate_parents,
 
         }
         if(adj != 0) {
-          try(fit <- run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint, ub = ub, lb = lb, opticont_method = opticont_method))
+          try(fit <- optiSelFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint, ub = ub, lb = lb, opticont_method = opticont_method))
         }
 
 

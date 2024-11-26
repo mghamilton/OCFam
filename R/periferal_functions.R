@@ -1,9 +1,8 @@
 
 #The script includes the following non-base R functions:
 #
-#  fam_K_matrix_fun
 # optiSel::opticont
-
+# AGHmatrix::Amatrix
 
 
 
@@ -80,7 +79,7 @@ get_fam_K_matrix <- function(ped, cand_fams) {
 
   fam_K_matrix <-  unique(ped[,c("Fam", "Sire", "FAM_SIRE", "Dam", "FAM_DAM")])
   colnames(fam_K_matrix) <-  c("FAM", "SIRE", "FAM_SIRE", "DAM", "FAM_DAM")
-  fam_K_matrix <- fam_K_matrix_fun(fam_K_matrix[!is.na(fam_K_matrix[,1]),])
+  fam_K_matrix <- optiSelFam::fam_K_matrix_fun(fam_K_matrix[!is.na(fam_K_matrix[,1]),])
   fam_K_matrix <- as.matrix(fam_K_matrix$K_matrix_families)
   fam_K_matrix <- fam_K_matrix[colnames(fam_K_matrix) %in% cand_fams, colnames(fam_K_matrix) %in% cand_fams]
   return(fam_K_matrix)
