@@ -7,9 +7,9 @@
 #' @param candidate_parents is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'Indiv' (character).}
-#'  \item{'Contbn_count'  (NA if unknown) (numeric). Can Contbn_count and Exclude_max_parents_per_fam be the one column e.g. 0 = fixed contbn NA = no constraint???????}
-#'  \item{'lb'  (numeric).}
-#'  \item{'ub'  (numeric).}
+#'  \item{'Contbn_count'  (NA if unknown) (numeric). Can Contbn_count and Exclude_max_parents_per_fam be the one column e.g. 0 = fixed contbn NA = no constraint??????? - FIXED_CONTBN}
+#'  \item{'lb'  (numeric). These would be more logically defined as counts - MIN_CONTBN (integers)??????}
+#'  \item{'ub'  (numeric). These would be more logically defined as counts - MAX_CONTBN (integers)??????}
 #'  \item{'Exclude_max_parents_per_fam'  (logical). Could just call this EXCLUDE??????}
 #' }
 #' @param ped is a data frame with the following columns (class in parentheses):
@@ -18,17 +18,17 @@
 #'  \item{'Sire'  (character).}
 #'  \item{'Dam'  (character).}
 #'  \item{'Fam'  (character).}
-#'  \item{'Born'  (numeric).}
+#'  \item{'Born'  (numeric).               is this required - could obtain it from ped????}
 #'  \item{'EBV'  (numeric).}
-#'  \item{'RANK'  (integer).}
-#'  \item{'FAM_SIRE'  (character).}
-#'  \item{'FAM_DAM'  (character).}
+#'  \item{'RANK'  (integer).               is this required - could obtain it from EBV????}
+#'  \item{'FAM_SIRE'  (character).        is this required - could obtain it from ped????}
+#'  \item{'FAM_DAM'  (character).         is this required - could obtain it from ped????}
 #'  \item{'LINE'  (character).          is this required????}
 #'  \item{'COHORT'  (character).        is this required????}
-#'  \item{'AVAIL_BROOD'  (logical).}
+#'  \item{'AVAIL_BROOD'  (logical).       is this required - could obtain it from candidate_parents????}
 #'  \item{'Breed'  (character).         is this required????}
-#'  \item{'Contbn_count'  (integer).}
-#'  \item{'AVAIL_OR_PAST_BROOD'  (logical).}
+#'  \item{'Contbn_count'  (integer).      is this required - could obtain it from candidate_parents????}
+#'  \item{'AVAIL_OR_PAST_BROOD'  (logical).  is this required - could obtain it from candidate_parents????}
 #' }
 #' @param indiv_contbn is the ...... (numeric between 0 and 1)
 #' @param kinship_constraint is the ...... (numeric between 0 and 1)
@@ -55,12 +55,12 @@
 #' output <- optiSelFam(
 #' candidate_parents = candidate_parents,
 #' ped = ped,
-#' indiv_contbn,
-#' kinship_constraint,
+#' indiv_contbn = (1/180),
+#' kinship_constraint = 0.09,
 #' step_interval = 0.1,
-#' overlapping_gens,
-#' gene_flow_vector,
-#' min_prop_parent_fams_to_retain_in_youngest_age_class )
+#' overlapping_gens = FALSE,
+#' gene_flow_vector = NA,
+#' min_prop_parent_fams_to_retain_in_youngest_age_class = 1)
 #' head(output$fam_contbn)
 #' head(output$parent_contbn)
 #' output$fit_out
@@ -645,7 +645,6 @@ fam_K_matrix_fun <- function(family_dat) {
   fam_pedigree        <- rbind(as.matrix(parents),as.matrix(families[,c("FAM","SIRE","DAM")]))
 
   #Generate K Matrix
-  # K_matrix_families      <- nadiv::makeA(fam_pedigree[,1:3])/2
   tmp <- fam_pedigree
   tmp[is.na(tmp)] <- 0
   K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
