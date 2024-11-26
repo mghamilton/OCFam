@@ -1,3 +1,74 @@
+#' optiSelFam
+#'
+#' @description
+#' This function generates a mating list for a set of parents.
+#' The mating list can be generated i) to minimise the average inbreeding coefficient (F) of families generated or ii) according to assortative mating principles.
+#' Inputs include a list of parents and a 3-column pedigree file specifying the ancestry of these candidates.
+#' @param candidate_parents is a data frame with the following columns (class in parentheses):
+#' \itemize{
+#'  \item{'Indiv' (character).}
+#'  \item{'Contbn_count'  (NA if unknown) (numeric). Can Contbn_count and Exclude_max_parents_per_fam be the one column e.g. 0 = fixed contbn NA = no constraint???????}
+#'  \item{'lb'  (numeric).}
+#'  \item{'ub'  (numeric).}
+#'  \item{'Exclude_max_parents_per_fam'  (logical). Could just call this EXCLUDE??????}
+#' }
+#' @param ped is a data frame with the following columns (class in parentheses):
+#' \itemize{
+#'  \item{'Indiv' (character).}
+#'  \item{'Sire'  (character).}
+#'  \item{'Dam'  (character).}
+#'  \item{'Fam'  (character).}
+#'  \item{'Born'  (numeric).}
+#'  \item{'EBV'  (numeric).}
+#'  \item{'RANK'  (integer).}
+#'  \item{'FAM_SIRE'  (character).}
+#'  \item{'FAM_DAM'  (character).}
+#'  \item{'LINE'  (character).          is this required????}
+#'  \item{'COHORT'  (character).        is this required????}
+#'  \item{'AVAIL_BROOD'  (logical).}
+#'  \item{'Breed'  (character).         is this required????}
+#'  \item{'Contbn_count'  (integer).}
+#'  \item{'AVAIL_OR_PAST_BROOD'  (logical).}
+#' }
+#' @param indiv_contbn is the ...... (numeric between 0 and 1)
+#' @param kinship_constraint is the ...... (numeric between 0 and 1)
+#' @param step_interval is the ...... (numeric between 0 and 1)???
+#' @param gene_flow_vector is a vector ......  as.numeric(NA) if overlapping_gens=FALSE (numeric). For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - Year 4, 3, 2, 1, oldest to youngest
+#' @param min_prop_parent_fams_to_retain_in_youngest_age_class is the ...... (numeric between 0 and 1)
+#' @return 'fam_contbn' is a data frame containing details of contributions by family:
+#' \itemize{
+#'  \item{ }
+#' }
+#' @return 'parent_contbn' is a data frame containing details of contributions by individual:
+#' \itemize{
+#'  \item{}
+#' }
+#' @return 'fit_out' is a vector containing details of the constraints applied:
+#' \itemize{
+#'  \item{}
+#' }
+#' @examples
+#' #Retrieve example data
+#' candidate_parents <- optiSelFam::candidate_parents
+#' ped <- optiSelFam::ped
+#'
+#' output <- optiSelFam(
+#' candidate_parents = candidate_parents,
+#' ped = ped,
+#' indiv_contbn,
+#' kinship_constraint,
+#' step_interval = 0.1,
+#' overlapping_gens,
+#' gene_flow_vector,
+#' min_prop_parent_fams_to_retain_in_youngest_age_class )
+#' head(output$fam_contbn)
+#' head(output$parent_contbn)
+#' output$fit_out
+#' @import optiSel
+#' @import AGHmatrix
+#' @import dplyr
+#' @export
+
 #Functions that are not base R functions
 # dplyr::left_join
 # optiSel::candes
@@ -11,9 +82,9 @@
 
 #Function to optimise contributions at family level
 optiSelFam  <- function(candidate_parents,
+                        ped,
                         indiv_contbn,
                         kinship_constraint,
-                        ped,
                         step_interval = 0.1,
                         overlapping_gens,
                         gene_flow_vector,
