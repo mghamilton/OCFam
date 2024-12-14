@@ -4,14 +4,6 @@
 #' This function generates a mating list for a set of parents.
 #' The mating list can be generated i) to minimise the average inbreeding coefficient (F) of families generated or ii) according to assortative mating principles.
 #' Inputs include a list of parents and a 3-column pedigree file specifying the ancestry of these candidates.
-#' @param candidate_parents is a data frame with the following columns (class in parentheses):
-#' \itemize{
-#'  \item{'Indiv' (character).}
-#'  \item{'Contbn_count'  (NA if unknown) (numeric). Can Contbn_count and Exclude_max_parents_per_fam be the one column e.g. 0 = fixed contbn NA = no constraint??????? - FIXED_CONTBN}
-#'  \item{'lb'  (numeric). These would be more logically defined as counts - MIN_CONTBN (integers)??????}
-#'  \item{'ub'  (numeric). These would be more logically defined as counts - MAX_CONTBN (integers)??????}
-#'  \item{'Exclude_max_parents_per_fam'  (logical). Could just call this EXCLUDE??????}
-#' }
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'Indiv' (character).}
