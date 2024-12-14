@@ -18,23 +18,17 @@
 #'  \item{'Sire'  (character).}
 #'  \item{'Dam'  (character).}
 #'  \item{'Fam'  (character).}
-#'  \item{'Born'  (numeric).               is this required - could obtain it from ped????}
+#'  \item{'Born'  (numeric).}
 #'  \item{'EBV'  (numeric).}
-#'  \item{'RANK'  (integer).               is this required - could obtain it from EBV????}
-#'  \item{'FAM_SIRE'  (character).        is this required - could obtain it from ped????}
-#'  \item{'FAM_DAM'  (character).         is this required - could obtain it from ped????}
-#'  \item{'LINE'  (character).          is this required????}
-#'  \item{'COHORT'  (character).        is this required????}
-#'  \item{'AVAIL_BROOD'  (logical).       is this required - could obtain it from candidate_parents????}
-#'  \item{'Breed'  (character).         is this required????}
-#'  \item{'Contbn_count'  (integer).      is this required - could obtain it from candidate_parents????}
-#'  \item{'AVAIL_OR_PAST_BROOD'  (logical).  is this required - could obtain it from candidate_parents????}
+#'  \item{'Contbn_count'  (numeric).}
+#'  \item{'AVAIL_BROOD'  (logical).}
 #' }
 #' @param indiv_contbn is the ...... (numeric between 0 and 1)
 #' @param kinship_constraint is the ...... (numeric between 0 and 1)
 #' @param step_interval is the ...... (numeric between 0 and 1)???
 #' @param gene_flow_vector is a vector ......  as.numeric(NA) if overlapping_gens=FALSE (numeric). For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - Year 4, 3, 2, 1, oldest to youngest
-#' @param min_prop_parent_fams_to_retain_in_youngest_age_class is the ...... (numeric between 0 and 1)
+#' @param min_prop_fams is the min_prop_parent_fams_to_retain_in_youngest_age_class (numeric between 0 and 1)
+#' @param max_parents_per_fam is the ...... (integer)
 #' @return 'fam_contbn' is a data frame containing details of contributions by family:
 #' \itemize{
 #'  \item{ }
@@ -60,7 +54,7 @@
 #' step_interval = 0.1,
 #' overlapping_gens = FALSE,
 #' gene_flow_vector = NA,
-#' min_prop_parent_fams_to_retain_in_youngest_age_class = 1)
+#' min_prop_fams = 1)
 #' head(output$fam_contbn)
 #' head(output$parent_contbn)
 #' output$fit_out
@@ -80,15 +74,26 @@
 
 #Required packages: optiSel, dplyr, AGHmatrix
 
+#TEST#######################################################
+#  load("C:/Users/MHamilton/OneDrive - CGIAR/Desktop/optiSelFam/R/Example_CC.RData")
+#  ped <- ped[,c("Indiv", "Sire", "Dam", "Fam", "EBV")]
+#  candidate_parents <- candidate_parents_selection
+#  indiv_contbn <- indiv_contbn_selection # 1/(N_fams_selection*2 + sum(ped[ped$LINE == "Selection" & !is.na(ped$Contbn_count), "Contbn_count"])) #parents of existing families
+#  kinship_constraint <- 0.014
+#  min_prop_fams <- min_prop_parent_fams_to_retain_selection
+
+
+
 #Function to optimise contributions at family level
-optiSelFam  <- function(candidate_parents,
-                        ped,
-                        indiv_contbn,
-                        kinship_constraint,
-                        step_interval = 0.1,
-                        overlapping_gens,
-                        gene_flow_vector,
-                        min_prop_parent_fams_to_retain_in_youngest_age_class ) {
+OCFam  <- function(#candidate_parents,
+  ped,
+  indiv_contbn,
+  kinship_constraint,
+  step_interval = 0.1,
+  overlapping_gens,
+  gene_flow_vector,
+  min_prop_fams,
+  max_parents_per_fam) {
 
 
   #candidate_parents - output of get_lb_ub function
@@ -131,20 +136,45 @@ optiSelFam  <- function(candidate_parents,
   #gene_flow_vector
   #e.g. NA - not required if overlapping_gens=FALSE
 
-  #min_prop_parent_fams_to_retain_in_youngest_age_class
+  #min_prop_fams
   #e.g. 1
-
-  if(nrow(candidate_parents) < 3) {break("Not enough candidate parents.  Must be 3 or more.")}
 
   # cand_parents_fixed_initial <- candidate_parents[!is.na(candidate_parents$lb), "Indiv"]
 
   #  if(length(cand_parents_fixed_initial) >= (1 / indiv_contbn)) {break("Fixed contributions of indivuals equal to or greater than possible number based on indiv_contbn")}
+  set.seed(12345)
+  tmp <- ped[order(runif(nrow(ped))),c("Indiv", "EBV")]
+  tmp <- tmp[order(tmp$EBV ), ]
+  tmp$RANK <- nrow(tmp):1
+  ped <- dplyr::left_join(ped, tmp, by = c("Indiv", "EBV"))
+  rm(tmp)
+
+  ped$AVAIL_OR_PAST_BROOD <- ped$AVAIL_BROOD | (ped$Contbn_count > 0 & !is.na(ped$Contbn_count))
+
+  candidate_parents <- get_lb_ub(ped = ped,
+                                 indiv_contbn = indiv_contbn,
+                                 max_parents_per_fam = max_parents_per_fam)
+
+  if(nrow(candidate_parents) < 3) {break("Not enough candidate parents.  Must be 3 or more.")}
 
   ################################################################################
   #Compute necessary columns
   ################################################################################
 
+  #ped$Generation <- determine_generations(ped)
 
+  fams <- ped[,c("Indiv", "Fam")]
+  colnames(fams) <- c("Sire", "FAM_SIRE")
+  ped <- dplyr::left_join(ped, fams, by = "Sire")
+  colnames(fams) <- c("Dam", "FAM_DAM")
+  ped <- dplyr::left_join(ped, fams, by = "Dam")
+  rm(fams)
+
+  ped$AVAIL_BROOD <- ped$Indiv %in% candidate_parents[!candidate_parents$Exclude_max_parents_per_fam, "Indiv"]
+
+  ped$Breed <- "Ignored"
+
+  #ped <- dplyr::left_join(ped, candidate_parents[,c("Indiv", "Contbn_count")], by = "Indiv")
 
   ################################################################################
   #Inputs for optiSel
@@ -207,8 +237,8 @@ optiSelFam  <- function(candidate_parents,
     Pedig$oldest_age_r_vector_2 <- Pedig$oldest_age_r_vector
 
     cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
-                   fPED=fPED,
-                   cont = cont)
+                            fPED=fPED,
+                            cont = cont)
 
     #set initial ub and lb
     ub <- setNames(candidate_parents$ub, candidate_parents$Indiv)
@@ -229,8 +259,8 @@ optiSelFam  <- function(candidate_parents,
                        male = 0.5,
                        female = 0.5)
     cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% candidate_parents$Indiv,],
-                   fPED=fPED,
-                   cont = cont)
+                            fPED=fPED,
+                            cont = cont)
 
     #set initial ub and lb
     ub <- setNames(candidate_parents$ub, candidate_parents$Indiv)
@@ -272,7 +302,7 @@ optiSelFam  <- function(candidate_parents,
   # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$Contbn_count),"Indiv"], "Fam"])
 
   fam_K_matrix <- optiSelFam::get_fam_K_matrix(ped = ped,
-                                   cand_fams = cand_fams)
+                                               cand_fams = cand_fams)
   print(fam_K_matrix)
   mean(fam_K_matrix)
   write.csv(fam_K_matrix, "fam_K_matrix.csv")
@@ -280,7 +310,7 @@ optiSelFam  <- function(candidate_parents,
   fam_K_matrix_in_youngest_age_class <- fam_K_matrix[rownames(fam_K_matrix) %in% cand_fams_in_youngest_age_class,
                                                      colnames(fam_K_matrix) %in% cand_fams_in_youngest_age_class]
 
-  min_N_parent_fams_to_retain_in_youngest_age_class <- ceiling(length(cand_fams_in_youngest_age_class) * min_prop_parent_fams_to_retain_in_youngest_age_class)
+  min_N_parent_fams_to_retain_in_youngest_age_class <- ceiling(length(cand_fams_in_youngest_age_class) * min_prop_fams)
   rm(cand_fams)
 
   additional_fams_to_retain <- NULL
@@ -312,8 +342,8 @@ optiSelFam  <- function(candidate_parents,
 
 
   additional_parents_fixed <- optiSelFam::get_best_indiv(fish = ped[ped$AVAIL_BROOD ,], #exclude animals previously used as parents
-                                             additional_fams_to_retain = additional_fams_to_retain,
-                                             candidate_parents = candidate_parents[!candidate_parents$Exclude_max_parents_per_fam,"Indiv"])
+                                                         additional_fams_to_retain = additional_fams_to_retain,
+                                                         candidate_parents = candidate_parents[!candidate_parents$Exclude_max_parents_per_fam,"Indiv"])
   ub[names(ub) %in% additional_parents_fixed] <- indiv_contbn
   lb[names(lb) %in% additional_parents_fixed] <- indiv_contbn - 1e-10
   rm(additional_parents_fixed, additional_fams_to_retain)
@@ -325,7 +355,7 @@ optiSelFam  <- function(candidate_parents,
   ################################################################################
 
   fit <- optiSelFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
-                        ub = ub, lb = lb, opticont_method = opticont_method)
+                                    ub = ub, lb = lb, opticont_method = opticont_method)
 
 
 
@@ -401,8 +431,8 @@ optiSelFam  <- function(candidate_parents,
           max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
           cand_parents_fixed_current_iteration <- optiSelFam::get_best_indiv(fish = cand_parents_not_fixed,
-                                                                 additional_fams_to_retain = fams_to_retain,
-                                                                 candidate_parents = candidate_parents[is.na(candidate_parents$Contbn_count),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
+                                                                             additional_fams_to_retain = fams_to_retain,
+                                                                             candidate_parents = candidate_parents[is.na(candidate_parents$Contbn_count),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
 
           ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
           ub <- ub[cand$phen$Indiv]
@@ -511,6 +541,7 @@ optiSelFam  <- function(candidate_parents,
 
   return(list(fam_contbn   = fam_contbn,
               parent_contbn = parent_contbn,
+              candidate_parents = candidate_parents,
               fit_out      = fit_out))#, summary.opticont = summary.opticont
 }
 
@@ -584,11 +615,6 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
   rm(tmp)
   return (cand_parents_fixed)
 }
-
-
-
-
-
 
 ################################################################################
 #get family K matrix
@@ -666,4 +692,106 @@ fam_K_matrix_fun <- function(family_dat) {
 
   return(list(K_matrix_families = K_matrix_families,
               family_inbreeding = family_inbreeding))
+}
+
+determine_generations <- function(pedigree) {
+
+  pedigree[is.na(pedigree[,2]) , 2] <- 0
+  pedigree[is.na(pedigree[,3]) , 3] <- 0
+
+  tmp <- pedigree[!duplicated(pedigree[,c(2, 3)]) |
+                    pedigree[,2] == 0 |
+                    pedigree[,3] == 0  , 1]
+  trim_ped <- AGHmatrix::filterpedigree(tmp, pedigree[1:3])
+  trim_ped <- pedigree[pedigree[,1] %in% trim_ped[,1], 1:3]
+  rm(tmp)
+
+  # Extract the INDIV, SIRE, and DAM columns by position
+  INDIV <- trim_ped[,1]
+  SIRE <- trim_ped[,2]
+  DAM <- trim_ped[,3]
+
+
+  # Initialize generation for each individual
+  generation <- rep(NA, nrow(trim_ped))
+
+  # Founders (those with no parents) are generation 0
+  generation[SIRE == 0 & DAM == 0] <- 0
+
+  # Iteratively calculate generations for non-founders
+  # while (any(is.na(generation))) {
+  for (i in seq_len(nrow(trim_ped))) {
+    if (is.na(generation[i])) {
+      # Fetch SIRE and DAM generations
+      sire_gen <- ifelse(SIRE[i] %in% INDIV,
+                         generation[INDIV == SIRE[i]], NA)
+      dam_gen <- ifelse(DAM[i] %in% INDIV,
+                        generation[INDIV == DAM[i]], NA)
+
+      # Calculate generation as average of parents' generations + 1, if available
+      if (!is.na(sire_gen) | !is.na(dam_gen)) {
+        generation[i] <- mean(c(sire_gen, dam_gen), na.rm = TRUE) + 1
+      }
+    }
+  }
+  # }
+
+  trim_ped[,"generation"] <- generation
+  trim_ped     <-  trim_ped[!(trim_ped[,2] == 0 & trim_ped[,3] == 0),] #remove founders
+  trim_ped <- unique(trim_ped[,2:4]) #retain unique families
+
+  pedigree <- dplyr::left_join(pedigree,
+                               trim_ped, by = colnames(pedigree[,2:3]))
+
+  pedigree[pedigree[,2] == 0 & pedigree[,3] == 0,"generation"] <- 0
+
+
+  return(pedigree$generation)
+}
+
+#get lower and upper bounds
+get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
+
+  #exclude based on max_parents_per_fam
+  candidate_parents <- ped[ ped$AVAIL_OR_PAST_BROOD,]
+
+  include <- candidate_parents[candidate_parents$AVAIL_BROOD,]
+  avail_brood <- include$Indiv
+  include <- include[order(include$RANK, decreasing = FALSE),]
+  past_brood <- candidate_parents[!candidate_parents$AVAIL_BROOD & candidate_parents$AVAIL_OR_PAST_BROOD,] #Past brood
+  include <- rbind(past_brood, include) #past brood at top - can't change past parents
+  include <- by(include, include["Fam"], head, n=max_parents_per_fam)
+  include <- Reduce(rbind, include)
+  include <- c(include[,"Indiv"])
+
+  exlcude <- avail_brood[!avail_brood %in% include] #exclude from avail_brood only - can't change past parents
+  rm(include, avail_brood, past_brood)
+
+  candidate_parents <- candidate_parents[, c("Indiv", "Contbn_count")]
+
+  max_parents_per_fam
+
+  candidate_parents$lb <- 0
+  candidate_parents[!is.na(candidate_parents$Contbn_count),"lb"] <-
+    candidate_parents[!is.na(candidate_parents$Contbn_count),"Contbn_count"] * indiv_contbn - 1e-10
+
+  candidate_parents$ub <- indiv_contbn
+  candidate_parents[!is.na(candidate_parents$Contbn_count),"ub"] <-
+    candidate_parents[!is.na(candidate_parents$Contbn_count),"Contbn_count"] * indiv_contbn
+
+  candidate_parents[candidate_parents$lb < 0 &
+                      !is.na(candidate_parents$Contbn_count), "ub"] <-
+    candidate_parents[candidate_parents$lb < 0 &
+                        !is.na(candidate_parents$Contbn_count), "ub"] + 1e-10  # ub must be different to lb
+  candidate_parents[candidate_parents$lb < 0 &
+                      !is.na(candidate_parents$Contbn_count), "lb"] <-  0 # can't be less than zero
+
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"lb"] <- 0
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"ub"] <- 1e-10
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"Contbn_count"] <- 0
+
+  candidate_parents$Exclude_max_parents_per_fam <- FALSE
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"Exclude_max_parents_per_fam"] <- TRUE
+
+  return(candidate_parents)
 }
