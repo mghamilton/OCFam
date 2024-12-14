@@ -12,7 +12,7 @@
 #'  \item{'Fam'  (character).}
 #'  \item{'Born'  (numeric).}
 #'  \item{'EBV'  (numeric).}
-#'  \item{'Contbn_count'  (numeric).}
+#'  \item{'N_AS_PARENT'  (numeric).}
 #'  \item{'AVAIL_BROOD'  (logical).}
 #' }
 #' @param indiv_contbn is the ...... (numeric between 0 and 1)
@@ -70,7 +70,7 @@
 #  load("C:/Users/MHamilton/OneDrive - CGIAR/Desktop/optiSelFam/R/Example_CC.RData")
 #  ped <- ped[,c("Indiv", "Sire", "Dam", "Fam", "EBV")]
 #  candidate_parents <- candidate_parents_selection
-#  indiv_contbn <- indiv_contbn_selection # 1/(N_fams_selection*2 + sum(ped[ped$LINE == "Selection" & !is.na(ped$Contbn_count), "Contbn_count"])) #parents of existing families
+#  indiv_contbn <- indiv_contbn_selection # 1/(N_fams_selection*2 + sum(ped[ped$LINE == "Selection" & !is.na(ped$N_AS_PARENT), "N_AS_PARENT"])) #parents of existing families
 #  kinship_constraint <- 0.014
 #  min_prop_fams <- min_prop_parent_fams_to_retain_selection
 
@@ -89,7 +89,7 @@ OCFam  <- function(#candidate_parents,
 
 
   #candidate_parents - output of get_lb_ub function
-  # Indiv                     Contbn_count lb          ub                                Exclude_max_parents_per_fam
+  # Indiv                     N_AS_PARENT lb          ub                                Exclude_max_parents_per_fam
   # G202302_752E925           NA           0           0.005555556                       FALSE
   # G202302_7535BE7           NA           0           0.005555556                       FALSE
   # G202302_7536818           NA           0           0.005555556                       FALSE
@@ -98,7 +98,7 @@ OCFam  <- function(#candidate_parents,
   # G202302_753E4AF           NA           0           0.005555556                       FALSE
 
   #indiv_contbn - scalar
-  # e.g. 0.005555556 = 1/(N_fams_tilv*2 + sum(ped[ped$LINE == "TILV" & !is.na(ped$Contbn_count), "Contbn_count"])) #parents of existing families
+  # e.g. 0.005555556 = 1/(N_fams_tilv*2 + sum(ped[ped$LINE == "TILV" & !is.na(ped$N_AS_PARENT), "N_AS_PARENT"])) #parents of existing families
 
   #kinship_constraint
   #e.g. 0.09
@@ -111,7 +111,7 @@ OCFam  <- function(#candidate_parents,
   # G202302_75D29F6 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  138  G202202_ON_0081
   # G202302_75FA452 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  139  G202202_ON_0081
   # G202302_75CF143 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0497  140  G202202_ON_0081
-  # FAM_DAM         LINE COHORT        AVAIL_BROOD Breed        Contbn_count     AVAIL_OR_PAST_BROOD
+  # FAM_DAM         LINE COHORT        AVAIL_BROOD Breed        N_AS_PARENT     AVAIL_OR_PAST_BROOD
   # G202202_ON_0007 TiLV    <NA>       FALSE       ON           NA               FALSE
   # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
   # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
@@ -141,7 +141,7 @@ OCFam  <- function(#candidate_parents,
   ped <- dplyr::left_join(ped, tmp, by = c("Indiv", "EBV"))
   rm(tmp)
 
-  ped$AVAIL_OR_PAST_BROOD <- ped$AVAIL_BROOD | (ped$Contbn_count > 0 & !is.na(ped$Contbn_count))
+  ped$AVAIL_OR_PAST_BROOD <- ped$AVAIL_BROOD | (ped$N_AS_PARENT > 0 & !is.na(ped$N_AS_PARENT))
 
   candidate_parents <- get_lb_ub(ped = ped,
                                  indiv_contbn = indiv_contbn,
@@ -166,7 +166,7 @@ OCFam  <- function(#candidate_parents,
 
   ped$Breed <- "Ignored"
 
-  #ped <- dplyr::left_join(ped, candidate_parents[,c("Indiv", "Contbn_count")], by = "Indiv")
+  #ped <- dplyr::left_join(ped, candidate_parents[,c("Indiv", "N_AS_PARENT")], by = "Indiv")
 
   ################################################################################
   #Inputs for optiSel
@@ -291,7 +291,7 @@ OCFam  <- function(#candidate_parents,
   fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "Fam"])) #contribution > 0
   fixed_fams_in_youngest_age_class <- fixed_fams[fixed_fams %in% cand_fams_in_youngest_age_class]
 
-  # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$Contbn_count),"Indiv"], "Fam"])
+  # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$N_AS_PARENT),"Indiv"], "Fam"])
 
   fam_K_matrix <- optiSelFam::get_fam_K_matrix(ped = ped,
                                                cand_fams = cand_fams)
@@ -424,7 +424,7 @@ OCFam  <- function(#candidate_parents,
 
           cand_parents_fixed_current_iteration <- optiSelFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                              additional_fams_to_retain = fams_to_retain,
-                                                                             candidate_parents = candidate_parents[is.na(candidate_parents$Contbn_count),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
+                                                                             candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
 
           ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
           ub <- ub[cand$phen$Indiv]
@@ -487,7 +487,7 @@ OCFam  <- function(#candidate_parents,
 
   A_mat <-  A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
-  tmp <- ped[!is.na(ped$Contbn_count) & ped$Contbn_count != 0 & ped$Indiv %in% rownames(A_mat), "Contbn_count"]
+  tmp <- ped[!is.na(ped$N_AS_PARENT) & ped$N_AS_PARENT != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT"]
   N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
   rm(tmp)
 
@@ -516,12 +516,12 @@ OCFam  <- function(#candidate_parents,
   tmp[is.na(tmp$ADDED_IN_LAST_ITERATION), "ADDED_IN_LAST_ITERATION"] <- FALSE
 
   parent_contbn <- ped[ped$Indiv %in% indivs_to_retain,]
-  parent_contbn[is.na(parent_contbn$Contbn_count),"Contbn_count"] <- 0
+  parent_contbn[is.na(parent_contbn$N_AS_PARENT),"N_AS_PARENT"] <- 0
   parent_contbn <- dplyr::left_join(parent_contbn, tmp, by = "Indiv")
 
   #if insufficient individuals then what???????????????????????????????????????????????
 
-  fam_contbn_parents <- aggregate(parent_contbn$Contbn_count, by = list(parent_contbn$Fam), FUN = "sum")
+  fam_contbn_parents <- aggregate(parent_contbn$N_AS_PARENT, by = list(parent_contbn$Fam), FUN = "sum")
   colnames(fam_contbn_parents) <- c("FAM", "N_AS_PAST_PARENT")
 
   fam_contbn         <- aggregate(parent_contbn$N_TOTAL_AS_PARENT, by = list(parent_contbn$Fam), FUN = "sum")
@@ -759,28 +759,28 @@ get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
   exlcude <- avail_brood[!avail_brood %in% include] #exclude from avail_brood only - can't change past parents
   rm(include, avail_brood, past_brood)
 
-  candidate_parents <- candidate_parents[, c("Indiv", "Contbn_count")]
+  candidate_parents <- candidate_parents[, c("Indiv", "N_AS_PARENT")]
 
   max_parents_per_fam
 
   candidate_parents$lb <- 0
-  candidate_parents[!is.na(candidate_parents$Contbn_count),"lb"] <-
-    candidate_parents[!is.na(candidate_parents$Contbn_count),"Contbn_count"] * indiv_contbn - 1e-10
+  candidate_parents[!is.na(candidate_parents$N_AS_PARENT),"lb"] <-
+    candidate_parents[!is.na(candidate_parents$N_AS_PARENT),"N_AS_PARENT"] * indiv_contbn - 1e-10
 
   candidate_parents$ub <- indiv_contbn
-  candidate_parents[!is.na(candidate_parents$Contbn_count),"ub"] <-
-    candidate_parents[!is.na(candidate_parents$Contbn_count),"Contbn_count"] * indiv_contbn
+  candidate_parents[!is.na(candidate_parents$N_AS_PARENT),"ub"] <-
+    candidate_parents[!is.na(candidate_parents$N_AS_PARENT),"N_AS_PARENT"] * indiv_contbn
 
   candidate_parents[candidate_parents$lb < 0 &
-                      !is.na(candidate_parents$Contbn_count), "ub"] <-
+                      !is.na(candidate_parents$N_AS_PARENT), "ub"] <-
     candidate_parents[candidate_parents$lb < 0 &
-                        !is.na(candidate_parents$Contbn_count), "ub"] + 1e-10  # ub must be different to lb
+                        !is.na(candidate_parents$N_AS_PARENT), "ub"] + 1e-10  # ub must be different to lb
   candidate_parents[candidate_parents$lb < 0 &
-                      !is.na(candidate_parents$Contbn_count), "lb"] <-  0 # can't be less than zero
+                      !is.na(candidate_parents$N_AS_PARENT), "lb"] <-  0 # can't be less than zero
 
   candidate_parents[candidate_parents$Indiv %in% exlcude,"lb"] <- 0
   candidate_parents[candidate_parents$Indiv %in% exlcude,"ub"] <- 1e-10
-  candidate_parents[candidate_parents$Indiv %in% exlcude,"Contbn_count"] <- 0
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"N_AS_PARENT"] <- 0
 
   candidate_parents$Exclude_max_parents_per_fam <- FALSE
   candidate_parents[candidate_parents$Indiv %in% exlcude,"Exclude_max_parents_per_fam"] <- TRUE
