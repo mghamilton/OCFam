@@ -141,6 +141,12 @@ optiSelFam  <- function(candidate_parents,
   #  if(length(cand_parents_fixed_initial) >= (1 / indiv_contbn)) {break("Fixed contributions of indivuals equal to or greater than possible number based on indiv_contbn")}
 
   ################################################################################
+  #Compute necessary columns
+  ################################################################################
+
+
+
+  ################################################################################
   #Inputs for optiSel
   ################################################################################
 
