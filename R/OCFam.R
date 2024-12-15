@@ -6,33 +6,57 @@
 #' Inputs include a list of parents and a 3-column pedigree file specifying the ancestry of these candidates.
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
-#'  \item{'Indiv' (character).}
-#'  \item{'Sire'  (character).}
-#'  \item{'Dam'  (character).}
-#'  \item{'Fam'  (character).}
-#'  \item{'Born'  (numeric).}
-#'  \item{'EBV'  (numeric).}
-#'  \item{'N_AS_PARENT_CURRENT'  (numeric).} #number of families contributed to in the current spawn round
-#'  \item{'AVAIL_BROOD'  (logical).}
-#' }
-#' @param indiv_contbn is the ...... (numeric between 0 and 1)
-#' @param kinship_constraint is the ...... (numeric between 0 and 1)
-#' @param step_interval is the ...... (numeric between 0 and 1)???
-#' @param gene_flow_vector is a vector ......  as.numeric(NA) if overlapping_gens=FALSE (numeric). For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - Year 4, 3, 2, 1, oldest to youngest
-#' @param min_prop_fams is the min_prop_parent_fams_to_retain_in_youngest_age_class (numeric between 0 and 1)
-#' @param max_parents_per_fam is the ...... (integer)
+#'  \item{'INDIV' is the individual identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character).}
+#'  \item{'DAM' is the female parent identifier (character).}
+#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (numeric).}
+#'  \item{'EBV' is the estimated breeding value (numeric).}
+#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (numeric).} #
+#'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+#' @param N_fams is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_CURRENT in ped) (integer)
+#' @param kinship_constraint is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)
+#' @param step_interval is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)
+#' @param gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+#' @param min_prop_fams is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1)
+#' @param max_parents_per_fam is the maximum number of parents to contribute from each family (integer)
 #' @return 'fam_contbn' is a data frame containing details of contributions by family:
 #' \itemize{
-#'  \item{ }
+#'  \item{FAM}
+#'  \item{N_INDIV_TOTAL}
+#'  \item{N_AS_PAST_PARENT}
+#'  \item{N_INDIV}
 #' }
 #' @return 'parent_contbn' is a data frame containing details of contributions by individual:
 #' \itemize{
-#'  \item{}
+#'  \item{INDIV}
+#'  \item{SIRE}
+#'  \item{DAM}
+#'  \item{FAM}
+#'  \item{BORN    }
+#'  \item{EBV}
+#'  \item{AVAIL_BROOD}
+#'  \item{N_AS_PARENT_CURRENT}
+#'  \item{RANK}
+#'  \item{AVAIL_OR_PAST_BROOD }
+#'  \item{"FAM_SIRE}
+#'  \item{FAM_DAM}
+#'  \item{BREED}
+#'  \item{MATURE}
+#'  \item{IS_CANDIDATE}
+#'  \item{N_TOTAL_AS_PARENT}
+#'  \item{ADDED_IN_LAST_ITERATION}
 #' }
-#' @return 'fit_out' is a vector containing details of the constraints applied:
+#' @return 'candidate_parents' is a data frame containing details of candidate parents:
 #' \itemize{
-#'  \item{}
+#'  \item{INDIV}
+#'  \item{N_AS_PARENT_CURRENT}
+#'  \item{LB}
+#'  \item{UB}
+#'  \item{EXCLUDE_MAX_PARENTS_PER_FAM}
+#'  \item{BORN}
 #' }
+#' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
 #' #Retrieve example data
 #' candidate_parents <- OCFam::candidate_parents
@@ -44,7 +68,6 @@
 #' indiv_contbn = (1/180),
 #' kinship_constraint = 0.09,
 #' step_interval = 0.1,
-#' overlapping_gens = FALSE,
 #' gene_flow_vector = NA,
 #' min_prop_fams = 1)
 #' head(output$fam_contbn)
@@ -66,30 +89,28 @@
 
 #Required packages: optiSel, dplyr, AGHmatrix
 
-#TEST#######################################################
-#  load("C:/Users/MHamilton/OneDrive - CGIAR/Desktop/OCFam/R/Example_CC.RData")
-#  ped <- ped[,c("Indiv", "Sire", "Dam", "Fam", "EBV")]
-#  candidate_parents <- candidate_parents_selection
-#  indiv_contbn <- indiv_contbn_selection # 1/(N_fams_selection*2 + sum(ped[ped$LINE == "Selection" & !is.na(ped$N_AS_PARENT_CURRENT), "N_AS_PARENT_CURRENT"])) #parents of existing families
-#  kinship_constraint <- 0.014
-#  min_prop_fams <- min_prop_parent_fams_to_retain_selection
-
-
-
 #Function to optimise contributions at family level
-OCFam  <- function(#candidate_parents,
-  ped,
-  indiv_contbn,
-  kinship_constraint,
-  step_interval = 0.1,
-  overlapping_gens,
-  gene_flow_vector,
-  min_prop_fams,
-  max_parents_per_fam) {
+OCFam  <- function(ped,
+                   N_fams, #total families including those already produced
+                   kinship_constraint, #if NA opticont_method = "min.fPED" else opticont_method = "max.EBV"
+                   step_interval = 0.1,
+                   gene_flow_vector, #if NA then discrete generations
+                   min_prop_fams,
+                   max_parents_per_fam) {
 
+  indiv_contbn <- 1/(N_fams*2)
+
+   overlapping_gens <-  !is.na(gene_flow_vector)
+
+  #change names for optiSel
+  colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
+  colnames(ped)[colnames(ped) == "SIRE"] <- "Sire"
+  colnames(ped)[colnames(ped) == "DAM"] <- "Dam"
+  colnames(ped)[colnames(ped) == "SEX"] <- "Sex"
+  colnames(ped)[colnames(ped) == "BORN"] <- "Born"
 
   #candidate_parents - output of get_lb_ub function
-  # Indiv                     N_AS_PARENT_CURRENT lb          ub                                Exclude_max_parents_per_fam
+  # Indiv                     N_AS_PARENT_CURRENT lb          ub                                EXCLUDE_MAX_PARENTS_PER_FAM
   # G202302_752E925           NA           0           0.005555556                       FALSE
   # G202302_7535BE7           NA           0           0.005555556                       FALSE
   # G202302_7536818           NA           0           0.005555556                       FALSE
@@ -104,14 +125,14 @@ OCFam  <- function(#candidate_parents,
   #e.g. 0.09
 
   #ped - pedigree
-  # Indiv           Sire            Dam             Fam             Born     EBV      RANK FAM_SIRE
+  # Indiv           Sire            Dam             FAM             Born     EBV      RANK FAM_Sire
   # G202302_75FB917 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0565  135  G202202_ON_0081
   # G202302_75D0BE8 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0556  136  G202202_ON_0081
   # G202302_75D03F6 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0549  137  G202202_ON_0081
   # G202302_75D29F6 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  138  G202202_ON_0081
   # G202302_75FA452 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  139  G202202_ON_0081
   # G202302_75CF143 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0497  140  G202202_ON_0081
-  # FAM_DAM         LINE COHORT        AVAIL_BROOD Breed        N_AS_PARENT_CURRENT     AVAIL_OR_PAST_BROOD
+  # FAM_Dam         LINE COHORT        AVAIL_BROOD Breed        N_AS_PARENT_CURRENT     AVAIL_OR_PAST_BROOD
   # G202202_ON_0007 TiLV    <NA>       FALSE       ON           NA               FALSE
   # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
   # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
@@ -155,14 +176,14 @@ OCFam  <- function(#candidate_parents,
 
   #ped$Generation <- determine_generations(ped)
 
-  fams <- ped[,c("Indiv", "Fam")]
-  colnames(fams) <- c("Sire", "FAM_SIRE")
+  fams <- ped[,c("Indiv", "FAM")]
+  colnames(fams) <- c("Sire", "FAM_Sire")
   ped <- dplyr::left_join(ped, fams, by = "Sire")
-  colnames(fams) <- c("Dam", "FAM_DAM")
+  colnames(fams) <- c("Dam", "FAM_Dam")
   ped <- dplyr::left_join(ped, fams, by = "Dam")
   rm(fams)
 
-  ped$AVAIL_BROOD <- ped$Indiv %in% candidate_parents[!candidate_parents$Exclude_max_parents_per_fam, "Indiv"]
+  ped$AVAIL_BROOD <- ped$Indiv %in% candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM, "Indiv"]
 
   ped$Breed <- "Ignored"
 
@@ -171,7 +192,6 @@ OCFam  <- function(#candidate_parents,
   ################################################################################
   #Inputs for optiSel
   ################################################################################
-
 
   if(overlapping_gens == TRUE) {
     #contributions
@@ -195,9 +215,9 @@ OCFam  <- function(#candidate_parents,
 
     #keep one individual per family from immature generations
     tmp <- ped[ped$Born > max(candidate_parents$Born),]
-    tmp <- tmp[!duplicated(tmp$Fam),]
+    tmp <- tmp[!duplicated(tmp$FAM),]
     tmp$Mature <- FALSE
-    tmp$Indiv <-  tmp$Fam
+    tmp$Indiv <-  tmp$FAM
     tmp$EBV <- 0
     ped <- ped[ped$Born <= max(candidate_parents$Born),]
     ped$Mature <- TRUE
@@ -210,6 +230,7 @@ OCFam  <- function(#candidate_parents,
     keep = ped[ped$isCandidate | !ped$Mature,"Indiv"] #keep if isCandidate or is immature
     Pedig <- optiSel::prePed(Pedig = ped, keep = keep) #keep if isCandidate or is immature
     fPED <- optiSel::pedIBD(Pedig, keep.only = keep)
+
 
     #replace immature year classes with family K matrix as per Hamilton paper
     fam_K <- OCFam::get_fam_K_matrix(Pedig, Pedig[!Pedig$Mature,"Indiv"])
@@ -228,7 +249,7 @@ OCFam  <- function(#candidate_parents,
     Pedig[Pedig$Born == min(Pedig[Pedig$AVAIL_OR_PAST_BROOD, "Born"]), "oldest_age_r_vector"] <- 1 #oldest YC to 1
     Pedig$oldest_age_r_vector_2 <- Pedig$oldest_age_r_vector
 
-    cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
+      cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
                             fPED=fPED,
                             cont = cont)
 
@@ -282,16 +303,16 @@ OCFam  <- function(#candidate_parents,
 
 
 
-  cand_fams  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv, "Fam"]))
+  cand_fams  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv, "FAM"]))
   cand_fams_in_youngest_age_class <- unlist(unique(ped[ped$Indiv %in%
                                                          candidate_parents[candidate_parents$Born == max(candidate_parents$Born),  "Indiv"],
-                                                       "Fam"]))
+                                                       "FAM"]))
   # cand_fams_in_oldest_age_class <- cand_fams[!cand_fams %in% cand_fams_in_youngest_age_class]
 
-  fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "Fam"])) #contribution > 0
+  fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "FAM"])) #contribution > 0
   fixed_fams_in_youngest_age_class <- fixed_fams[fixed_fams %in% cand_fams_in_youngest_age_class]
 
-  # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$N_AS_PARENT_CURRENT),"Indiv"], "Fam"])
+  # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$N_AS_PARENT_CURRENT),"Indiv"], "FAM"])
 
   fam_K_matrix <- OCFam::get_fam_K_matrix(ped = ped,
                                                cand_fams = cand_fams)
@@ -335,7 +356,7 @@ OCFam  <- function(#candidate_parents,
 
   additional_parents_fixed <- OCFam::get_best_indiv(fish = ped[ped$AVAIL_BROOD ,], #exclude animals previously used as parents
                                                          additional_fams_to_retain = additional_fams_to_retain,
-                                                         candidate_parents = candidate_parents[!candidate_parents$Exclude_max_parents_per_fam,"Indiv"])
+                                                         candidate_parents = candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM,"Indiv"])
   ub[names(ub) %in% additional_parents_fixed] <- indiv_contbn
   lb[names(lb) %in% additional_parents_fixed] <- indiv_contbn - 1e-10
   rm(additional_parents_fixed, additional_fams_to_retain)
@@ -410,16 +431,16 @@ OCFam  <- function(#candidate_parents,
         #                                         cand_parents_fixed_past_iteration) #some families failed but parents in "PARENT" cohort (and pond)
         cand_parents_not_fixed <- cand_parents_not_fixed[cand_parents_not_fixed$AVAIL_BROOD, ]
 
-        fam_contbn_not_fixed <- aggregate(cand_parents_not_fixed$oc, by = list(cand_parents_not_fixed$Fam), FUN = "sum")
-        colnames(fam_contbn_not_fixed) <- c("Fam", "sum_oc")
+        fam_contbn_not_fixed <- aggregate(cand_parents_not_fixed$oc, by = list(cand_parents_not_fixed$FAM), FUN = "sum")
+        colnames(fam_contbn_not_fixed) <- c("FAM", "sum_oc")
 
-        fams_to_retain <- fam_contbn_not_fixed[fam_contbn_not_fixed$sum_oc > (indiv_contbn * adj), "Fam"]
+        fams_to_retain <- fam_contbn_not_fixed[fam_contbn_not_fixed$sum_oc > (indiv_contbn * adj), "FAM"]
 
         if(length(fams_to_retain) > 0) { #probably should allow more than one individual to be fixed per iteration but any missed will be picked up in next iteration and so like that impact is minimal
 
           #get max_sum_oc
-          fam_contbn_not_fixed[fam_contbn_not_fixed$Fam %in% fams_to_retain, "sum_oc"] <-
-            fam_contbn_not_fixed[fam_contbn_not_fixed$Fam %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
+          fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] <-
+            fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
           max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
           cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
@@ -521,15 +542,35 @@ OCFam  <- function(#candidate_parents,
 
   #if insufficient individuals then what???????????????????????????????????????????????
 
-  fam_contbn_parents <- aggregate(parent_contbn$N_AS_PARENT_CURRENT, by = list(parent_contbn$Fam), FUN = "sum")
+  fam_contbn_parents <- aggregate(parent_contbn$N_AS_PARENT_CURRENT, by = list(parent_contbn$FAM), FUN = "sum")
   colnames(fam_contbn_parents) <- c("FAM", "N_AS_PAST_PARENT")
 
-  fam_contbn         <- aggregate(parent_contbn$N_TOTAL_AS_PARENT, by = list(parent_contbn$Fam), FUN = "sum")
+  fam_contbn         <- aggregate(parent_contbn$N_TOTAL_AS_PARENT, by = list(parent_contbn$FAM), FUN = "sum")
   colnames(fam_contbn) <- c("FAM", "N_INDIV_TOTAL")
   fam_contbn$N_INDIV_TOTAL <- round(fam_contbn$N_INDIV_TOTAL,6)
   fam_contbn <- dplyr::left_join(fam_contbn, fam_contbn_parents, by = "FAM")
   fam_contbn$N_INDIV <- fam_contbn$N_INDIV_TOTAL - fam_contbn$N_AS_PAST_PARENT
   fam_contbn
+
+  #change names from optiSel
+  colnames(parent_contbn)[colnames(parent_contbn) == "Indiv"] <- "INDIV"
+  colnames(parent_contbn)[colnames(parent_contbn) == "Sire"] <- "SIRE"
+  colnames(parent_contbn)[colnames(parent_contbn) == "Dam"] <- "DAM"
+  colnames(parent_contbn)[colnames(parent_contbn) == "Born"] <- "BORN"
+  colnames(parent_contbn)[colnames(parent_contbn) == "FAM_Sire"] <- "FAM_SIRE"
+  colnames(parent_contbn)[colnames(parent_contbn) == "FAM_Dam"] <- "FAM_DAM"
+  colnames(parent_contbn)[colnames(parent_contbn) == "Breed"] <- "BREED"
+  colnames(parent_contbn)[colnames(parent_contbn) == "Mature"] <- "MATURE"
+  colnames(parent_contbn)[colnames(parent_contbn) == "isCandidate"] <- "IS_CANDIDATE"
+
+  colnames(candidate_parents)[colnames(candidate_parents) == "Indiv"] <- "INDIV"
+  colnames(candidate_parents)[colnames(candidate_parents) == "lb"] <- "LB"
+  colnames(candidate_parents)[colnames(candidate_parents) == "ub"] <- "UB"
+  colnames(candidate_parents)[colnames(candidate_parents) == "Born"] <- "BORN"
+
+  fam_contbn <- fam_contbn[order(fam_contbn$FAM),]
+  parent_contbn <- parent_contbn[order(parent_contbn$INDIV),]
+  candidate_parents <- candidate_parents[order(candidate_parents$INDIV),]
 
   return(list(fam_contbn   = fam_contbn,
               parent_contbn = parent_contbn,
@@ -600,10 +641,10 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 
 get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
   tmp <- fish[order(fish$RANK, decreasing = TRUE),]
-  tmp <- tmp[tmp$Fam %in% additional_fams_to_retain &
+  tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
                tmp$Indiv %in% candidate_parents,]
-  cand_parents_fixed <- tmp[!duplicated(tmp$Fam),]
-  cand_parents_fixed <- cand_parents_fixed[order(cand_parents_fixed$Fam),"Indiv"]
+  cand_parents_fixed <- tmp[!duplicated(tmp$FAM),]
+  cand_parents_fixed <- cand_parents_fixed[order(cand_parents_fixed$FAM),"Indiv"]
   rm(tmp)
   return (cand_parents_fixed)
 }
@@ -614,8 +655,8 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
 
 get_fam_K_matrix <- function(ped, cand_fams) {
 
-  fam_K_matrix <-  unique(ped[,c("Fam", "Sire", "FAM_SIRE", "Dam", "FAM_DAM")])
-  colnames(fam_K_matrix) <-  c("FAM", "SIRE", "FAM_SIRE", "DAM", "FAM_DAM")
+  fam_K_matrix <-  unique(ped[,c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")])
+  colnames(fam_K_matrix) <-  c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")
   fam_K_matrix <- OCFam::fam_K_matrix_fun(fam_K_matrix[!is.na(fam_K_matrix[,1]),])
   fam_K_matrix <- as.matrix(fam_K_matrix$K_matrix_families)
   fam_K_matrix <- fam_K_matrix[colnames(fam_K_matrix) %in% cand_fams, colnames(fam_K_matrix) %in% cand_fams]
@@ -631,29 +672,29 @@ fam_K_matrix_fun <- function(family_dat) {
   # class: data.frame
   # fields:
   #   FAM
-  #   SIRE
-  #   FAM_SIRE
-  #   DAM
-  #   FAM_DAM
+  #   Sire
+  #   FAM_Sire
+  #   Dam
+  #   FAM_Dam
 
   #load required library - AGHmatrix
   #  if("AGHmatrix" %in% installed.packages()[,"Package"] == FALSE) { install.packages("AGHmatrix" , repos='https://cran.csiro.au/')}  #Install nadiv package if not already installed
   #  library(AGHmatrix)
 
   #sires
-  sires <- matrix(unique(family_dat$SIRE), ncol = 1)
-  colnames(sires)[1] <- "SIRE"
-  sires <- merge(sires, family_dat[,c("SIRE","FAM_SIRE")], by = "SIRE", all.x = TRUE)
+  sires <- matrix(unique(family_dat$Sire), ncol = 1)
+  colnames(sires)[1] <- "Sire"
+  sires <- merge(sires, family_dat[,c("Sire","FAM_Sire")], by = "Sire", all.x = TRUE)
   colnames(sires) <- c("Indiv_id","FAM")
-  sires <- merge(sires, family_dat[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
+  sires <- merge(sires, family_dat[,c("FAM","Sire","Dam")], by = "FAM", all.x = TRUE)
   sires <- subset(sires, select=-c(FAM)) #remove FAM column
 
   #dams
-  dams <- matrix(unique(family_dat$DAM), ncol = 1)
-  colnames(dams)[1] <- "DAM"
-  dams <- merge(dams, family_dat[,c("DAM","FAM_DAM")], by = "DAM", all.x = TRUE)
+  dams <- matrix(unique(family_dat$Dam), ncol = 1)
+  colnames(dams)[1] <- "Dam"
+  dams <- merge(dams, family_dat[,c("Dam","FAM_Dam")], by = "Dam", all.x = TRUE)
   colnames(dams) <- c("Indiv_id","FAM")
-  dams <- merge(dams, family_dat[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
+  dams <- merge(dams, family_dat[,c("FAM","Sire","Dam")], by = "FAM", all.x = TRUE)
   dams <- subset(dams, select=-c(FAM)) #remove FAM column
 
   parents <- rbind(sires,dams)
@@ -666,7 +707,7 @@ fam_K_matrix_fun <- function(family_dat) {
   tmp1$FAM <- paste0("1_", tmp1$FAM) #needs a unique id
   families <- rbind(tmp1, tmp2)
 
-  fam_pedigree        <- rbind(as.matrix(parents),as.matrix(families[,c("FAM","SIRE","DAM")]))
+  fam_pedigree        <- rbind(as.matrix(parents),as.matrix(families[,c("FAM","Sire","Dam")]))
 
   #Generate K Matrix
   tmp <- fam_pedigree
@@ -698,27 +739,27 @@ determine_generations <- function(pedigree) {
   trim_ped <- pedigree[pedigree[,1] %in% trim_ped[,1], 1:3]
   rm(tmp)
 
-  # Extract the INDIV, SIRE, and DAM columns by position
-  INDIV <- trim_ped[,1]
-  SIRE <- trim_ped[,2]
-  DAM <- trim_ped[,3]
+  # Extract the Indiv, Sire, and Dam columns by position
+  Indiv <- trim_ped[,1]
+  Sire <- trim_ped[,2]
+  Dam <- trim_ped[,3]
 
 
   # Initialize generation for each individual
   generation <- rep(NA, nrow(trim_ped))
 
   # Founders (those with no parents) are generation 0
-  generation[SIRE == 0 & DAM == 0] <- 0
+  generation[Sire == 0 & Dam == 0] <- 0
 
   # Iteratively calculate generations for non-founders
   # while (any(is.na(generation))) {
   for (i in seq_len(nrow(trim_ped))) {
     if (is.na(generation[i])) {
-      # Fetch SIRE and DAM generations
-      sire_gen <- ifelse(SIRE[i] %in% INDIV,
-                         generation[INDIV == SIRE[i]], NA)
-      dam_gen <- ifelse(DAM[i] %in% INDIV,
-                        generation[INDIV == DAM[i]], NA)
+      # Fetch Sire and Dam generations
+      sire_gen <- ifelse(Sire[i] %in% Indiv,
+                         generation[Indiv == Sire[i]], NA)
+      dam_gen <- ifelse(Dam[i] %in% Indiv,
+                        generation[Indiv == Dam[i]], NA)
 
       # Calculate generation as average of parents' generations + 1, if available
       if (!is.na(sire_gen) | !is.na(dam_gen)) {
@@ -752,7 +793,7 @@ get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
   include <- include[order(include$RANK, decreasing = FALSE),]
   past_brood <- candidate_parents[!candidate_parents$AVAIL_BROOD & candidate_parents$AVAIL_OR_PAST_BROOD,] #Past brood
   include <- rbind(past_brood, include) #past brood at top - can't change past parents
-  include <- by(include, include["Fam"], head, n=max_parents_per_fam)
+  include <- by(include, include["FAM"], head, n=max_parents_per_fam)
   include <- Reduce(rbind, include)
   include <- c(include[,"Indiv"])
 
@@ -782,8 +823,8 @@ get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
   candidate_parents[candidate_parents$Indiv %in% exlcude,"ub"] <- 1e-10
   candidate_parents[candidate_parents$Indiv %in% exlcude,"N_AS_PARENT_CURRENT"] <- 0
 
-  candidate_parents$Exclude_max_parents_per_fam <- FALSE
-  candidate_parents[candidate_parents$Indiv %in% exlcude,"Exclude_max_parents_per_fam"] <- TRUE
+  candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM <- FALSE
+  candidate_parents[candidate_parents$Indiv %in% exlcude,"EXCLUDE_MAX_PARENTS_PER_FAM"] <- TRUE
 
   return(candidate_parents)
 }

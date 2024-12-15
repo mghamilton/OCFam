@@ -9,7 +9,6 @@ OCFam(
   N_fams,
   kinship_constraint,
   step_interval = 0.1,
-  overlapping_gens,
   gene_flow_vector,
   min_prop_fams,
   max_parents_per_fam
@@ -20,7 +19,6 @@ OCFam(
   N_fams,
   kinship_constraint,
   step_interval = 0.1,
-  overlapping_gens,
   gene_flow_vector,
   min_prop_fams,
   max_parents_per_fam
@@ -29,25 +27,27 @@ OCFam(
 \arguments{
 \item{ped}{is a data frame with the following columns (class in parentheses):
 \itemize{
- \item{'INDIV' (character).}
- \item{'SIRE'  (character).}
- \item{'DAM'  (character).}
- \item{'FAM'  (character).}
- \item{'BORN'  (numeric).}
+ \item{'Indiv' (character).}
+ \item{'Sire'  (character).}
+ \item{'Dam'  (character).}
+ \item{'Fam'  (character).}
+ \item{'Born'  (numeric).}
  \item{'EBV'  (numeric).}
  \item{'N_AS_PARENT_CURRENT'  (numeric).} #number of families contributed to in the current spawn round
  \item{'AVAIL_BROOD'  (logical).}
 }}
 
-\item{kinship_constraint}{is the ...... (numeric between 0 and 1)}
+\item{N_fams}{is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_CURRENT in ped) (integer)}
 
-\item{step_interval}{is the ...... (numeric between 0 and 1)???}
+\item{kinship_constraint}{is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)}
 
-\item{gene_flow_vector}{is a vector ......  as.numeric(NA) if overlapping_gens=FALSE (numeric). For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - Year 4, 3, 2, 1, oldest to youngest}
+\item{step_interval}{is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)}
 
-\item{min_prop_fams}{is the min_prop_parent_fams_to_retain_in_youngest_age_class (numeric between 0 and 1)}
+\item{gene_flow_vector}{is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.}
 
-\item{max_parents_per_fam}{is the ...... (integer)}
+\item{min_prop_fams}{is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1)}
+
+\item{max_parents_per_fam}{is the maximum number of parents to contribute from each family (integer)}
 
 \item{indiv_contbn}{is the ...... (numeric between 0 and 1)}
 }
@@ -69,18 +69,44 @@ OCFam(
 
 'fam_contbn' is a data frame containing details of contributions by family:
 \itemize{
- \item{ }
+ \item{FAM}
+ \item{N_INDIV_TOTAL}
+ \item{N_AS_PAST_PARENT}
+ \item{N_INDIV}
 }
 
 'parent_contbn' is a data frame containing details of contributions by individual:
 \itemize{
- \item{}
+ \item{INDIV}
+ \item{SIRE}
+ \item{DAM}
+ \item{FAM}
+ \item{BORN    }
+ \item{EBV}
+ \item{AVAIL_BROOD}
+ \item{N_AS_PARENT_CURRENT}
+ \item{RANK}
+ \item{AVAIL_OR_PAST_BROOD }
+ \item{"FAM_SIRE}
+ \item{FAM_DAM}
+ \item{BREED}
+ \item{MATURE}
+ \item{IS_CANDIDATE}
+ \item{N_TOTAL_AS_PARENT}
+ \item{ADDED_IN_LAST_ITERATION}
 }
 
-'fit_out' is a vector containing details of the constraints applied:
+'candidate_parents' is a data frame containing details of candidate parents:
 \itemize{
- \item{}
+ \item{INDIV}
+ \item{N_AS_PARENT_CURRENT}
+ \item{LB}
+ \item{UB}
+ \item{EXCLUDE_MAX_PARENTS_PER_FAM}
+ \item{BORN}
 }
+
+'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 }
 \description{
 This function generates a mating list for a set of parents.
@@ -118,7 +144,6 @@ ped = ped,
 indiv_contbn = (1/180),
 kinship_constraint = 0.09,
 step_interval = 0.1,
-overlapping_gens = FALSE,
 gene_flow_vector = NA,
 min_prop_fams = 1)
 head(output$fam_contbn)
