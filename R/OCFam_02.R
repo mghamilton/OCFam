@@ -77,15 +77,17 @@
 
 
 #Function to optimise contributions at family level
-OCFam  <- function(#candidate_parents,
-  ped,
-  indiv_contbn,
-  kinship_constraint,
-  step_interval = 0.1,
-  overlapping_gens,
-  gene_flow_vector,
-  min_prop_fams,
-  max_parents_per_fam) {
+OCFam  <- function(ped,
+                   N_fams, #total families including those already produced
+                   kinship_constraint,
+                   step_interval = 0.1,
+                   overlapping_gens,
+                   gene_flow_vector,
+                   min_prop_fams,
+                   max_parents_per_fam) {
+
+  #indiv_contbn <- 1/(N_fams*2 + sum(ped[!is.na(ped$N_AS_PARENT_CURRENT), "N_AS_PARENT_CURRENT"])) #parents of existing families
+   indiv_contbn <- 1/(N_fams*2)
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
