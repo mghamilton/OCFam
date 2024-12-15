@@ -6,33 +6,57 @@
 #' Inputs include a list of parents and a 3-column pedigree file specifying the ancestry of these candidates.
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
-#'  \item{'INDIV' (character).}
-#'  \item{'SIRE'  (character).}
-#'  \item{'DAM'  (character).}
-#'  \item{'FAM'  (character).}
-#'  \item{'BORN'  (numeric).}
-#'  \item{'EBV'  (numeric).}
-#'  \item{'N_AS_PARENT_CURRENT'  (numeric).} #number of families contributed to in the current spawn round
-#'  \item{'AVAIL_BROOD'  (logical).}
-#' }
-#' @param indiv_contbn is the ...... (numeric between 0 and 1)
-#' @param kinship_constraint is the ...... (numeric between 0 and 1)
-#' @param step_interval is the ...... (numeric between 0 and 1)???
-#' @param gene_flow_vector is a vector ......  as.numeric(NA) if overlapping_gens=FALSE (numeric). For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - Year 4, 3, 2, 1, oldest to youngest
-#' @param min_prop_fams is the min_prop_parent_fams_to_retain_in_youngest_age_class (numeric between 0 and 1)
-#' @param max_parents_per_fam is the ...... (integer)
+#'  \item{'INDIV' is the individual identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character).}
+#'  \item{'DAM' is the female parent identifier (character).}
+#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (numeric).}
+#'  \item{'EBV' is the estimated breeding value (numeric).}
+#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (numeric).} #
+#'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+#' @param N_fams is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_CURRENT in ped) (integer)
+#' @param kinship_constraint is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)
+#' @param step_interval is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)
+#' @param gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+#' @param min_prop_fams is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1)
+#' @param max_parents_per_fam is the maximum number of parents to contribute from each family (integer)
 #' @return 'fam_contbn' is a data frame containing details of contributions by family:
 #' \itemize{
-#'  \item{ }
+#'  \item{FAM}
+#'  \item{N_INDIV_TOTAL}
+#'  \item{N_AS_PAST_PARENT}
+#'  \item{N_INDIV}
 #' }
 #' @return 'parent_contbn' is a data frame containing details of contributions by individual:
 #' \itemize{
-#'  \item{}
+#'  \item{INDIV}
+#'  \item{SIRE}
+#'  \item{DAM}
+#'  \item{FAM}
+#'  \item{BORN    }
+#'  \item{EBV}
+#'  \item{AVAIL_BROOD}
+#'  \item{N_AS_PARENT_CURRENT}
+#'  \item{RANK}
+#'  \item{AVAIL_OR_PAST_BROOD }
+#'  \item{"FAM_SIRE}
+#'  \item{FAM_DAM}
+#'  \item{BREED}
+#'  \item{MATURE}
+#'  \item{IS_CANDIDATE}
+#'  \item{N_TOTAL_AS_PARENT}
+#'  \item{ADDED_IN_LAST_ITERATION}
 #' }
-#' @return 'fit_out' is a vector containing details of the constraints applied:
+#' @return 'candidate_parents' is a data frame containing details of candidate parents:
 #' \itemize{
-#'  \item{}
+#'  \item{INDIV}
+#'  \item{N_AS_PARENT_CURRENT}
+#'  \item{LB}
+#'  \item{UB}
+#'  \item{EXCLUDE_MAX_PARENTS_PER_FAM}
+#'  \item{BORN}
 #' }
+#' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
 #' #Retrieve example data
 #' candidate_parents <- OCFam::candidate_parents
@@ -44,7 +68,6 @@
 #' indiv_contbn = (1/180),
 #' kinship_constraint = 0.09,
 #' step_interval = 0.1,
-#' overlapping_gens = FALSE,
 #' gene_flow_vector = NA,
 #' min_prop_fams = 1)
 #' head(output$fam_contbn)
@@ -66,28 +89,18 @@
 
 #Required packages: optiSel, dplyr, AGHmatrix
 
-#TEST#######################################################
-#  load("C:/Users/MHamilton/OneDrive - CGIAR/Desktop/OCFam/R/Example_CC.RData")
-#  ped <- ped[,c("INDIV", "SIRE", "DAM", "FAM", "EBV")]
-#  candidate_parents <- candidate_parents_selection
-#  indiv_contbn <- indiv_contbn_selection # 1/(N_fams_selection*2 + sum(ped[ped$LINE == "Selection" & !is.na(ped$N_AS_PARENT_CURRENT), "N_AS_PARENT_CURRENT"])) #parents of existing families
-#  kinship_constraint <- 0.014
-#  min_prop_fams <- min_prop_parent_fams_to_retain_selection
-
-
-
 #Function to optimise contributions at family level
 OCFam  <- function(ped,
                    N_fams, #total families including those already produced
-                   kinship_constraint,
+                   kinship_constraint, #if NA opticont_method = "min.fPED" else opticont_method = "max.EBV"
                    step_interval = 0.1,
-                   overlapping_gens,
-                   gene_flow_vector,
+                   gene_flow_vector, #if NA then discrete generations
                    min_prop_fams,
                    max_parents_per_fam) {
 
-  #indiv_contbn <- 1/(N_fams*2 + sum(ped[!is.na(ped$N_AS_PARENT_CURRENT), "N_AS_PARENT_CURRENT"])) #parents of existing families
-   indiv_contbn <- 1/(N_fams*2)
+  indiv_contbn <- 1/(N_fams*2)
+
+   overlapping_gens <-  !is.na(gene_flow_vector)
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
@@ -554,6 +567,10 @@ OCFam  <- function(ped,
   colnames(candidate_parents)[colnames(candidate_parents) == "lb"] <- "LB"
   colnames(candidate_parents)[colnames(candidate_parents) == "ub"] <- "UB"
   colnames(candidate_parents)[colnames(candidate_parents) == "Born"] <- "BORN"
+
+  fam_contbn <- fam_contbn[order(fam_contbn$FAM),]
+  parent_contbn <- parent_contbn[order(parent_contbn$INDIV),]
+  candidate_parents <- candidate_parents[order(candidate_parents$INDIV),]
 
   return(list(fam_contbn   = fam_contbn,
               parent_contbn = parent_contbn,

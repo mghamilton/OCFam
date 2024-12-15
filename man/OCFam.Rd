@@ -6,7 +6,7 @@
 \usage{
 OCFam(
   ped,
-  indiv_contbn,
+  N_fams,
   kinship_constraint,
   step_interval = 0.1,
   overlapping_gens,
@@ -17,7 +17,7 @@ OCFam(
 
 OCFam(
   ped,
-  indiv_contbn,
+  N_fams,
   kinship_constraint,
   step_interval = 0.1,
   overlapping_gens,
@@ -39,8 +39,6 @@ OCFam(
  \item{'AVAIL_BROOD'  (logical).}
 }}
 
-\item{indiv_contbn}{is the ...... (numeric between 0 and 1)}
-
 \item{kinship_constraint}{is the ...... (numeric between 0 and 1)}
 
 \item{step_interval}{is the ...... (numeric between 0 and 1)???}
@@ -50,6 +48,8 @@ OCFam(
 \item{min_prop_fams}{is the min_prop_parent_fams_to_retain_in_youngest_age_class (numeric between 0 and 1)}
 
 \item{max_parents_per_fam}{is the ...... (integer)}
+
+\item{indiv_contbn}{is the ...... (numeric between 0 and 1)}
 }
 \value{
 'fam_contbn' is a data frame containing details of contributions by family:
