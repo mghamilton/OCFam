@@ -718,6 +718,8 @@ fam_K_matrix_fun <- function(family_dat) {
   #Generate K Matrix
   tmp <- fam_pedigree
   tmp <- tmp[tmp[,"Indiv_id"] != 0,]
+  tmp[is.na(tmp[,"Sire"]),"Sire"] <- 0
+  tmp[is.na(tmp[,"Dam"]),"Dam"] <- 0
   K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
   rm(tmp)
 
