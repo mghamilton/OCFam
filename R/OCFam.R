@@ -10,10 +10,11 @@
 #'  \item{'SIRE' is the male parent identifier (character).}
 #'  \item{'DAM' is the female parent identifier (character).}
 #'  \item{'FAM' is a full-sibling family identifier (character).}
-#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (numeric).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
 #'  \item{'EBV' is the estimated breeding value (numeric).}
-#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (numeric).} #
+#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (integer).}
 #'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+#'  }
 #' @param N_fams is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_CURRENT in ped) (integer)
 #' @param kinship_constraint is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)
 #' @param step_interval is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)
@@ -29,32 +30,32 @@
 #' }
 #' @return 'parent_contbn' is a data frame containing details of contributions by individual:
 #' \itemize{
-#'  \item{INDIV}
-#'  \item{SIRE}
-#'  \item{DAM}
-#'  \item{FAM}
-#'  \item{BORN    }
-#'  \item{EBV}
-#'  \item{AVAIL_BROOD}
-#'  \item{N_AS_PARENT_CURRENT}
-#'  \item{RANK}
-#'  \item{AVAIL_OR_PAST_BROOD }
-#'  \item{"FAM_SIRE}
-#'  \item{FAM_DAM}
-#'  \item{BREED}
-#'  \item{MATURE}
-#'  \item{IS_CANDIDATE}
-#'  \item{N_TOTAL_AS_PARENT}
-#'  \item{ADDED_IN_LAST_ITERATION}
+#'  \item{'INDIV' is the individual identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character).}
+#'  \item{'DAM' is the female parent identifier (character).}
+#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
+#'  \item{'EBV' is the estimated breeding value (numeric).}
+#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (integer).}
+#'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+#'  \item{'RANK' individual rank based on EBV}
+#'  \item{'AVAIL_OR_PAST_BROOD' is TRUE if AVAIL_BROOD is TRUE or the individual has previously been used as a parent in the next age class.}
+#'  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
+#'  \item{'FAM_DAM' is a full-sibling family identifier of the DAM (character).}
+#'  \item{'BREED' is the species.}
+#'  \item{'MATURE' is sexually mature}
+#'  \item{'IS_CANDIDATE' was considered a candidate parent in OCFam}
+#'  \item{'N_TOTAL_AS_PARENT' is the total count as a parent of the next year class}
+#'  \item{'ADDED_IN_LAST_ITERATION' individual was addes in the last iteration of OCFam.  Would be the first individuals to be removed in necessary.}
 #' }
 #' @return 'candidate_parents' is a data frame containing details of candidate parents:
 #' \itemize{
-#'  \item{INDIV}
-#'  \item{N_AS_PARENT_CURRENT}
-#'  \item{LB}
-#'  \item{UB}
-#'  \item{EXCLUDE_MAX_PARENTS_PER_FAM}
-#'  \item{BORN}
+#'  \item{'INDIV' is the individual identifier (character).}
+#'  \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class prior to running optimal contributions (integer).}
+#'  \item{'LB' is the low bound of possilbe contribution to the next age class}
+#'  \item{'UB' is the upper bound of possilbe contribution to the next age class}
+#'  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
 #' }
 #' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
@@ -100,7 +101,7 @@ OCFam  <- function(ped,
 
   indiv_contbn <- 1/(N_fams*2)
 
-   overlapping_gens <-  !is.na(gene_flow_vector)
+   overlapping_gens <-  !is.na(gene_flow_vector)[1]
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
@@ -164,7 +165,7 @@ OCFam  <- function(ped,
 
   ped$AVAIL_OR_PAST_BROOD <- ped$AVAIL_BROOD | (ped$N_AS_PARENT_CURRENT > 0 & !is.na(ped$N_AS_PARENT_CURRENT))
 
-  candidate_parents <- get_lb_ub(ped = ped,
+  candidate_parents <- OCFam::get_lb_ub(ped = ped,
                                  indiv_contbn = indiv_contbn,
                                  max_parents_per_fam = max_parents_per_fam)
 
@@ -304,9 +305,12 @@ OCFam  <- function(ped,
 
 
   cand_fams  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv, "FAM"]))
-  cand_fams_in_youngest_age_class <- unlist(unique(ped[ped$Indiv %in%
-                                                         candidate_parents[candidate_parents$Born == max(candidate_parents$Born),  "Indiv"],
-                                                       "FAM"]))
+  cand_fams_in_youngest_age_class  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv &
+                                                          ped$Born == max(ped$Born), "FAM"]))
+
+  #cand_fams_in_youngest_age_class <- unlist(unique(ped[ped$Indiv %in%
+  #                                                       candidate_parents[candidate_parents$Born == max(candidate_parents$Born),  "Indiv"],
+  #                                                     "FAM"]))
   # cand_fams_in_oldest_age_class <- cand_fams[!cand_fams %in% cand_fams_in_youngest_age_class]
 
   fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "FAM"])) #contribution > 0
@@ -592,7 +596,7 @@ OCFam  <- function(ped,
 ################################################################################
 #function to run optiSel::opticont depending on opticont_method
 ################################################################################
-
+#' @export
 run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   if(opticont_method == "max.EBV") {
 
@@ -638,7 +642,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 ################################################################################
 #identify best individual from fams_to_retain
 ################################################################################
-
+#' @export
 get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
   tmp <- fish[order(fish$RANK, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
@@ -652,7 +656,7 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
 ################################################################################
 #get family K matrix
 ################################################################################
-
+#' @export
 get_fam_K_matrix <- function(ped, cand_fams) {
 
   fam_K_matrix <-  unique(ped[,c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")])
@@ -666,7 +670,7 @@ get_fam_K_matrix <- function(ped, cand_fams) {
 ################################################################################
 #fam_K_matrix_fun
 ################################################################################
-
+#' @export
 fam_K_matrix_fun <- function(family_dat) {
   #data
   # class: data.frame
@@ -711,7 +715,7 @@ fam_K_matrix_fun <- function(family_dat) {
 
   #Generate K Matrix
   tmp <- fam_pedigree
-  tmp[is.na(tmp)] <- 0
+  tmp <- tmp[tmp[,"Indiv_id"] != 0,]
   K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
   rm(tmp)
 
@@ -727,6 +731,11 @@ fam_K_matrix_fun <- function(family_dat) {
               family_inbreeding = family_inbreeding))
 }
 
+################################################################################
+#determine_generations
+################################################################################
+
+#' @export
 determine_generations <- function(pedigree) {
 
   pedigree[is.na(pedigree[,2]) , 2] <- 0
@@ -783,6 +792,7 @@ determine_generations <- function(pedigree) {
 }
 
 #get lower and upper bounds
+#' @export
 get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
 
   #exclude based on max_parents_per_fam
