@@ -661,6 +661,8 @@ get_fam_K_matrix <- function(ped, cand_fams) {
 
   fam_K_matrix <-  unique(ped[,c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")])
   colnames(fam_K_matrix) <-  c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")
+  fam_K_matrix <- fam_K_matrix[!is.na(fam_K_matrix$FAM),]
+  fam_K_matrix <- fam_K_matrix[fam_K_matrix$FAM != "",]
   fam_K_matrix <- OCFam::fam_K_matrix_fun(fam_K_matrix[!is.na(fam_K_matrix[,1]),])
   fam_K_matrix <- as.matrix(fam_K_matrix$K_matrix_families)
   fam_K_matrix <- fam_K_matrix[colnames(fam_K_matrix) %in% cand_fams, colnames(fam_K_matrix) %in% cand_fams]
