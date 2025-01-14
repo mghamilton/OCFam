@@ -23,11 +23,11 @@ OCFam(
  \item{'FAM' is a full-sibling family identifier (character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'EBV' is the estimated breeding value (numeric).}
- \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (integer).}
+ \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
  }}
 
-\item{N_fams}{is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_CURRENT in ped) (integer)}
+\item{N_fams}{is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_PREV in ped) (integer)}
 
 \item{kinship_constraint}{is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)}
 
@@ -56,7 +56,7 @@ OCFam(
  \item{'FAM' is a full-sibling family identifier (character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'EBV' is the estimated breeding value (numeric).}
- \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class (integer).}
+ \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
  \item{'RANK' individual rank based on EBV}
  \item{'AVAIL_OR_PAST_BROOD' is TRUE if AVAIL_BROOD is TRUE or the individual has previously been used as a parent in the next age class.}
@@ -65,14 +65,14 @@ OCFam(
  \item{'BREED' is the species.}
  \item{'MATURE' is sexually mature}
  \item{'IS_CANDIDATE' was considered a candidate parent in OCFam}
- \item{'N_TOTAL_AS_PARENT' is the total count as a parent of the next year class}
+ \item{'N_TOTAL_AS_PARENT' is the total count as a parent in the next year class}
  \item{'ADDED_IN_LAST_ITERATION' individual was addes in the last iteration of OCFam.  Would be the first individuals to be removed in necessary.}
 }
 
 'candidate_parents' is a data frame containing details of candidate parents:
 \itemize{
  \item{'INDIV' is the individual identifier (character).}
- \item{'N_AS_PARENT_CURRENT' is the number of families contributed to in the next age class prior to running optimal contributions (integer).}
+ \item{'N_AS_PARENT_PREV' is the number of families contributed to in the next age class prior to running optimal contributions (integer).}
  \item{'LB' is the low bound of possilbe contribution to the next age class}
  \item{'UB' is the upper bound of possilbe contribution to the next age class}
  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
@@ -82,9 +82,9 @@ OCFam(
 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 }
 \description{
-This function generates a mating list for a set of parents.
-The mating list can be generated i) to minimise the average inbreeding coefficient (F) of families generated or ii) according to assortative mating principles.
-Inputs include a list of parents and a 3-column pedigree file specifying the ancestry of these candidates.
+This function generates ....
+...
+...
 }
 \examples{
 #Retrieve example data
