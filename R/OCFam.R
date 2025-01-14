@@ -305,7 +305,7 @@ OCFam  <- function(ped,
 
 
 
-  #modified this code to limit only families in most youngest year class
+  #modified this code to limit only families in the youngest year class
 
 
 
