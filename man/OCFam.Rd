@@ -87,18 +87,5 @@ It also addresses the rounding issue associated with standard optimal contributi
 }
 \examples{
 #Retrieve example data
-candidate_parents <- OCFam::candidate_parents
-ped <- OCFam::ped
-
-output <- OCFam(
-candidate_parents = candidate_parents,
-ped = ped,
-indiv_contbn = (1/180),
-kinship_constraint = 0.09,
-step_interval = 0.1,
-gene_flow_vector = NA,
-min_prop_fams = 1)
-head(output$fam_contbn)
-head(output$parent_contbn)
-output$fit_out
+...
 }
