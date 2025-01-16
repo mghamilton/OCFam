@@ -1,9 +1,9 @@
 #' OCFam
 #'
 #' @description
-#' This function generates ....
-#' ...
-#' ...
+#' This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051
+#' It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
+#'
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'INDIV' is the individual identifier (character).}
