@@ -87,5 +87,20 @@ It also addresses the rounding issue associated with standard optimal contributi
 }
 \examples{
 #Retrieve example data
-...
+ped <- OCFam::ped
+tail(ped)
+
+#Run OCFam function
+OCFam_output <- OCFam::OCFam(ped = ped,
+                             N_fams = 60,
+                             kinship_constraint = 0.012,
+                             step_interval = 0.1,
+                             gene_flow_vector = NA,
+                             min_prop_fams = 0.9,
+                             max_parents_per_fam = 4
+)
+
+OCFam_output$fit_out$summary
+OCFam_output$fit_out$mean
+head(OCFam_output$fam_contbn)
 }
