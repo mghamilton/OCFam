@@ -82,9 +82,8 @@ OCFam(
 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 }
 \description{
-This function generates ....
-...
-...
+This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051
+It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 }
 \examples{
 #Retrieve example data
