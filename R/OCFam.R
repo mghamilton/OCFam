@@ -522,7 +522,7 @@ OCFam  <- function(ped,
   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   cand_parents_fixed <- c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )
 
-  Pedig <- rbind(ped[ped$GENERATION !=  max(ped$Born), ], #c("Indiv", "Sire", "Dam")
+  Pedig <- rbind(ped[ped$Born !=  max(ped$Born), ], #c("Indiv", "Sire", "Dam")          #Is this correct for overlapping generations???????
                  ped[ped$Indiv %in% cand_parents_fixed,]) #c("Indiv", "Sire", "Dam")
 
   Pedig <- optiSel::prePed(Pedig = Pedig, keep = cand_parents_fixed)
