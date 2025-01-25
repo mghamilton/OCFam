@@ -55,7 +55,6 @@
 #'  \item{'LB' is the low bound of possilbe contribution to the next age class}
 #'  \item{'UB' is the upper bound of possilbe contribution to the next age class}
 #'  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
-#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
 #' }
 #' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
@@ -170,6 +169,11 @@ OCFam  <- function(ped,
   candidate_parents <- OCFam::get_lb_ub(ped = ped,
                                  indiv_contbn = indiv_contbn,
                                  max_parents_per_fam = max_parents_per_fam)
+
+  candidate_parents_orig <- candidate_parents #for output
+  colnames(candidate_parents_orig) <- c("INDIV", "N_AS_PARENT_PREV", "LB", "UB", "EXCLUDE_MAX_PARENTS_PER_FAM")
+
+  candidate_parents <- candidate_parents[!(candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM),]
 
   if(nrow(candidate_parents) < 3) {break("Not enough candidate parents.  Must be 3 or more.")}
 
@@ -586,7 +590,7 @@ OCFam  <- function(ped,
 
   return(list(fam_contbn   = fam_contbn,
               parent_contbn = parent_contbn,
-              candidate_parents = candidate_parents,
+              candidate_parents = candidate_parents_orig,
               fit_out      = fit_out))#, summary.opticont = summary.opticont
 }
 
