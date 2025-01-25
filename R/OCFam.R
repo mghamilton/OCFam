@@ -485,7 +485,7 @@ OCFam  <- function(ped,
     }
 
     #if already have enough parents the break after one addition iteration
-   if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) > 1 / indiv_contbn &
+   if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= 1 / indiv_contbn &
       length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
 
   }
