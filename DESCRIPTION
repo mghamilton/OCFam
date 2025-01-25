@@ -1,7 +1,7 @@
 Package: OCFam
 Type: Package
 Title: Optimal Contribrutions Selection For Highly Fecund Species
-Version: 1.0
+Version: 1.1
 Author: Matthew Gray Hamilton <matthewhamilton75@gmail.com>
 Maintainer: Matthew Gray Hamilton <matthewhamilton75@gmail.com>
 Description: optiSelFam
