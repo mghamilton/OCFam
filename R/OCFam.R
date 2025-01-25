@@ -424,6 +424,8 @@ OCFam  <- function(ped,
 
   for(adj in seq((1-step_interval),0,-step_interval)) {
 
+    prev_count <- length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration ))
+
     print(paste("Count parents previous iteration =",length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )), "of", 1 / indiv_contbn))
     print(paste("indiv_contbn = ",indiv_contbn))
     print(paste("Iteration adjustment = ",adj))
@@ -481,6 +483,11 @@ OCFam  <- function(ped,
         final_adj <- adj
       }
     }
+
+    #if already have enough parents the break after one addition iteration
+   if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) > 1 / indiv_contbn &
+      length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
+
   }
   #}
   #From last successful iteration with finer steps (step_interval^2)

@@ -76,7 +76,6 @@ OCFam(
  \item{'LB' is the low bound of possilbe contribution to the next age class}
  \item{'UB' is the upper bound of possilbe contribution to the next age class}
  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
- \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
 }
 
 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
