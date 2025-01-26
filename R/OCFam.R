@@ -123,9 +123,10 @@ OCFam  <- function(ped,
   ped[ped$Sex == "0" & !is.na(ped$Sex),"Sex"] <- NA
 
   #Data checks###############################################################################
-  if(!(sum(ped$Sex %in% c("male","female")) == nrow(ped) |
-       sum(is.na(ped$Sex)) == nrow(ped))) {
-    break("SEX must be defined for all individuals or not defined for all individuals (i.e. = NA)")
+  tmp <- ped[ped$AVAIL_BROOD,]
+  if(!(sum(tmp$Sex %in% c("male","female")) == nrow(tmp) |
+       sum(is.na(tmp$Sex)) == nrow(tmp))) {
+    break("SEX must be defined for all individuals where AVAIL_BROOD is TRUE or not defined for all individuals (i.e. = NA)")
   }
 
 
