@@ -215,7 +215,7 @@ OCFam  <- function(ped,
 
   ped$AVAIL_BROOD <- ped$Indiv %in% candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM, "Indiv"]
 
-  ped$Breed <- "Ignored"
+  ped$Breed <- "Breed_ignored"
 
   #ped <- dplyr::left_join(ped, candidate_parents[,c("Indiv", "N_AS_PARENT_PREV")], by = "Indiv")
 
