@@ -21,6 +21,7 @@ OCFam(
  \item{'SIRE' is the male parent identifier (character).}
  \item{'DAM' is the female parent identifier (character).}
  \item{'FAM' is a full-sibling family identifier (character).}
+ \item{'SEX' is the sex of the individual. "male" (or 1 = male), "female" (or 2 = female), NA if unknown.  If one animal is of unknown sex, sex will be ignored (integer or character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'EBV' is the estimated breeding value (numeric).}
  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
@@ -102,4 +103,5 @@ OCFam_output <- OCFam::OCFam(ped = ped,
 OCFam_output$fit_out$summary
 OCFam_output$fit_out$mean
 head(OCFam_output$fam_contbn)
+head(OCFam_output$parent_contbn)
 }
