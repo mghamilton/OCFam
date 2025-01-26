@@ -552,6 +552,7 @@ OCFam  <- function(ped,
 
   tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
   N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+  N_retain <- round(N_retain,0)
   rm(tmp)
 
   while(nrow(A_mat) > N_retain) {
@@ -575,6 +576,7 @@ OCFam  <- function(ped,
   #  if(sum(is.na(ped$Sex)) > 0) { #if sex is not defined
   #  tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
   #  N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+  #  N_retain <- round(N_retain,0)
   #  rm(tmp)
 
   #  while(nrow(A_mat) > N_retain) {
@@ -596,6 +598,7 @@ OCFam  <- function(ped,
 
   #    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
   #    N_retain_males <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+  #    N_retain_males <- round(N_retain_males,0)
   #    rm(tmp)
 
   #    A_mat <- A_mat[rownames(A_mat) %in% males,colnames(A_mat) %in% males]
@@ -626,6 +629,7 @@ OCFam  <- function(ped,
 
   #    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
   #    N_retain_females <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+  #    N_retain_females <- round(N_retain_females,0)
   #    rm(tmp)
 
   #    A_mat <- A_mat[rownames(A_mat) %in% females,colnames(A_mat) %in% females]
