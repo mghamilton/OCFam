@@ -547,7 +547,7 @@ OCFam  <- function(ped,
 
   A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed)
 
-  A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
+  A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
 
   tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
@@ -620,7 +620,7 @@ OCFam  <- function(ped,
 
   #    A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed[!cand_parents_fixed %in% males_removed])
 
-  #    A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
+  #    A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
   #    females <- ped[ped$Sex == "female", "Indiv"]
 
