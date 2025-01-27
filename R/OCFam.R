@@ -66,7 +66,7 @@
 #' #Run OCFam function
 #' OCFam_output <- OCFam::OCFam(ped = ped,
 #'                              N_fams = 60,
-#'                              kinship_constraint = 0.012,
+#'                              kinship_constraint = NA,
 #'                              step_interval = 0.1,
 #'                              gene_flow_vector = NA,
 #'                              min_prop_fams = 0.9,
@@ -410,26 +410,20 @@ OCFam  <- function(ped,
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                                ub = ub, lb = lb, opticont_method = opticont_method)
 
-
-
-
-
   ###############################################
-  #NEED TO ENSURE IN OVERLAPPING GENERATIONS THAT ONE GENERATION IS NOT OVER-REPRESTENTED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  #The code below results in some suboptimal parents within families being selected.
+  # Step 2 is unnecessary - just run run_OC_max_EBV to get values for fit.parent for Step 3
 
 
+#  ub <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn, fit$parent$Indiv)
+#  ub[ub == 0] <- indiv_contbn
+#  ub <- ub[cand$phen$Indiv]
+#  ub <- ub[names(ub) %in%  names(ub_orig)]
 
-
-
-  ub <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn, fit$parent$Indiv)
-  ub[ub == 0] <- indiv_contbn
-  ub <- ub[cand$phen$Indiv]
-  ub <- ub[names(ub) %in%  names(ub_orig)]
-
-  lb <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn - 1e-10 , fit$parent$Indiv)
-  lb[lb < 0] <- 0
-  lb <- lb[cand$phen$Indiv]
-  lb <- lb[names(lb) %in%  names(lb_orig)]
+#  lb <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn - 1e-10 , fit$parent$Indiv)
+#  lb[lb < 0] <- 0
+#  lb <- lb[cand$phen$Indiv]
+#  lb <- lb[names(lb) %in%  names(lb_orig)]
 
   ################################################################################
   #3.  add to list of cand_parents_fixed the best individual from families highly represented in OC
@@ -479,9 +473,24 @@ OCFam  <- function(ped,
             fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
           max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
+
+
+
+
+
+
+
           cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                         additional_fams_to_retain = fams_to_retain,
                                                                         candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
+
+
+
+
+
+
+
+
 
           ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
           ub <- ub[cand$phen$Indiv]
