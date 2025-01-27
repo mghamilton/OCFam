@@ -113,6 +113,18 @@ OCFam  <- function(ped,
   colnames(ped)[colnames(ped) == "SEX"] <- "Sex"
   colnames(ped)[colnames(ped) == "BORN"] <- "Born"
 
+
+
+
+
+
+#  ped$SEX <- NA #ignoring sex for the moment!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
   if(!("Sex" %in% colnames(ped))) {
     ped$Sex <- NA
   }
@@ -392,9 +404,10 @@ OCFam  <- function(ped,
 
 
 
+tmp <- ped
+tmp$oc <- tmp$EBV
 
-
-  additional_parents_fixed <- OCFam::get_best_indiv(fish = ped[ped$AVAIL_BROOD ,], #exclude animals previously used as parents
+  additional_parents_fixed <- OCFam::get_best_indiv(fish = tmp[tmp$AVAIL_BROOD ,], #exclude animals previously used as parents
                                                     additional_fams_to_retain = additional_fams_to_retain,
                                                     candidate_parents = candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM,"Indiv"])
   ub[names(ub) %in% additional_parents_fixed] <- indiv_contbn
@@ -407,23 +420,35 @@ OCFam  <- function(ped,
   #2. identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
   ################################################################################
 
+#  fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
+#                               ub = ub, lb = lb, opticont_method = opticont_method)
+ ub_tmp <- ub
+ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
+lb_tmp <- lb
+lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
+
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
-                               ub = ub, lb = lb, opticont_method = opticont_method)
-
+                               ub = ub_tmp, lb = lb_tmp, opticont_method = opticont_method)
+  rm(ub_tmp, lb_tmp)
   ###############################################
-  #The code below results in some suboptimal parents within families being selected.
-  # Step 2 is unnecessary - just run run_OC_max_EBV to get values for fit.parent for Step 3
+  #Without family counts the code below results in some suboptimal parents within families being selected.
 
 
-#  ub <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn, fit$parent$Indiv)
-#  ub[ub == 0] <- indiv_contbn
-#  ub <- ub[cand$phen$Indiv]
-#  ub <- ub[names(ub) %in%  names(ub_orig)]
 
-#  lb <- setNames(floor(round(fit$parent$oc/indiv_contbn,4)) * indiv_contbn - 1e-10 , fit$parent$Indiv)
-#  lb[lb < 0] <- 0
-#  lb <- lb[cand$phen$Indiv]
-#  lb <- lb[names(lb) %in%  names(lb_orig)]
+  count <- floor(round(fit$parent$oc/indiv_contbn,4))
+  count[count > 1] <- 1 #if greater than one then limit to one
+
+  ub <- setNames(count * indiv_contbn, fit$parent$Indiv)
+  ub[ub == 0] <- indiv_contbn
+  ub <- ub[cand$phen$Indiv]
+  ub <- ub[names(ub) %in%  names(ub_orig)]
+
+  lb <- setNames(count * indiv_contbn - 1e-10 , fit$parent$Indiv)
+  lb[lb < 0] <- 0
+  lb <- lb[cand$phen$Indiv]
+  lb <- lb[names(lb) %in%  names(lb_orig)]
+
+  lb_table <- lb
 
   ################################################################################
   #3.  add to list of cand_parents_fixed the best individual from families highly represented in OC
@@ -432,9 +457,10 @@ OCFam  <- function(ped,
 
   cand_parents_fixed_current_iteration <- NA #lb[lb != 0]
   cand_parents_fixed_past_iteration <- NULL
+
   max_sum_oc <- 1
 
-  for(adj in seq((1-step_interval),0,-step_interval)) {
+  for(adj in seq(1,0,-step_interval)) {
 
     prev_count <- length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration ))
 
@@ -452,7 +478,7 @@ OCFam  <- function(ped,
 
       if((sum(lb)) < 1) {
 
-
+        if(adj != 1) {
         cand_parents_fixed_past_iteration <- names(lb[lb!=0])
 
         cand_parents_not_fixed <- fit$parent[!fit$parent$Indiv %in% cand_parents_fixed_past_iteration,]
@@ -473,24 +499,9 @@ OCFam  <- function(ped,
             fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
           max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
-
-
-
-
-
-
-
           cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                         additional_fams_to_retain = fams_to_retain,
                                                                         candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
-
-
-
-
-
-
-
-
 
           ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
           ub <- ub[cand$phen$Indiv]
@@ -500,6 +511,7 @@ OCFam  <- function(ped,
           lb <- lb[cand$phen$Indiv]
           lb <- lb[names(lb) %in%  names(lb_orig)]
 
+        }
         }
         if(adj != 0) {
           try(fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint, ub = ub, lb = lb, opticont_method = opticont_method))
@@ -511,6 +523,7 @@ OCFam  <- function(ped,
       }
     }
 
+    lb_table <- rbind(lb_table,lb)
     #if already have enough parents the break after one addition iteration
     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
        length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
@@ -766,8 +779,18 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
     }
 
   }
-  fit <- optiSel::opticont(opticont_method, cand, con,
-                           solver="cccp")
+  print(cand$mean)
+
+#  if(opticont_method == "max.EBV") {  #for unknown reasons max.EBV doesn't seem to work
+#  cand$phen$EBV <- (-1) * cand$phen$EBV
+#  fit <- optiSel::opticont(method = "min.EBV", cand = cand, con = con,
+#                           solver="cccp2")
+#  cand$phen$EBV <- (-1) * cand$phen$EBV
+#  } else {
+    fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
+                             solver="cccp2")
+#  }
+
   return(fit)
 }
 
@@ -778,7 +801,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 
 #' @export
 get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
-  tmp <- fish[order(fish$RANK, decreasing = TRUE),]
+  tmp <- fish[order(fish$oc, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
                tmp$Indiv %in% candidate_parents,]
   cand_parents_fixed <- tmp[!duplicated(tmp$FAM),]

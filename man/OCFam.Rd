@@ -93,7 +93,7 @@ tail(ped)
 #Run OCFam function
 OCFam_output <- OCFam::OCFam(ped = ped,
                              N_fams = 60,
-                             kinship_constraint = 0.012,
+                             kinship_constraint = NA,
                              step_interval = 0.1,
                              gene_flow_vector = NA,
                              min_prop_fams = 0.9,
