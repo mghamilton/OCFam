@@ -238,7 +238,6 @@ OCFam  <- function(ped,
     #set initial ub and lb
     ub <- setNames(candidate_parents$ub, candidate_parents$Indiv)
     lb <- setNames(candidate_parents$lb, candidate_parents$Indiv)
-
   }
 
   if(overlapping_gens == FALSE) {
