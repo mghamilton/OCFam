@@ -113,18 +113,6 @@ OCFam  <- function(ped,
   colnames(ped)[colnames(ped) == "SEX"] <- "Sex"
   colnames(ped)[colnames(ped) == "BORN"] <- "Born"
 
-
-
-
-
-
-#  ped$SEX <- NA #ignoring sex for the moment!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-
-
   if(!("Sex" %in% colnames(ped))) {
     ped$Sex <- NA
   }
@@ -140,57 +128,6 @@ OCFam  <- function(ped,
        sum(is.na(tmp$Sex)) == nrow(tmp))) {
     break("SEX must be defined for all individuals where AVAIL_BROOD is TRUE or not defined for all individuals (i.e. = NA)")
   }
-
-
-
-
-
-
-
-  #candidate_parents - output of get_lb_ub function
-  # Indiv                     N_AS_PARENT_PREV lb          ub                                EXCLUDE_MAX_PARENTS_PER_FAM
-  # G202302_752E925           NA           0           0.005555556                       FALSE
-  # G202302_7535BE7           NA           0           0.005555556                       FALSE
-  # G202302_7536818           NA           0           0.005555556                       FALSE
-  # G202302_753946A           NA           0           0.005555556                       FALSE
-  # G202302_753DC36           NA           0           0.005555556                       FALSE
-  # G202302_753E4AF           NA           0           0.005555556                       FALSE
-
-  #indiv_contbn - scalar
-  # e.g. 0.005555556 = 1/(N_fams_tilv*2 + sum(ped[ped$LINE == "TILV" & !is.na(ped$N_AS_PARENT_PREV), "N_AS_PARENT_PREV"])) #parents of existing families
-
-  #kinship_constraint
-  #e.g. 0.09
-
-  #ped - pedigree
-  # Indiv           Sire            Dam             FAM             Born     EBV      RANK FAM_Sire
-  # G202302_75FB917 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0565  135  G202202_ON_0081
-  # G202302_75D0BE8 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0556  136  G202202_ON_0081
-  # G202302_75D03F6 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0549  137  G202202_ON_0081
-  # G202302_75D29F6 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  138  G202202_ON_0081
-  # G202302_75FA452 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0545  139  G202202_ON_0081
-  # G202302_75CF143 G202202_7AE17C5 G202202_7ADC209 G202302_ON_0178 17.88489 -0.0497  140  G202202_ON_0081
-  # FAM_Dam         LINE COHORT        AVAIL_BROOD Breed        N_AS_PARENT_PREV     AVAIL_OR_PAST_BROOD
-  # G202202_ON_0007 TiLV    <NA>       FALSE       ON           NA               FALSE
-  # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
-  # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
-  # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
-  # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
-  # G202202_ON_0007 TiLV GROWOUT       FALSE       ON           NA               FALSE
-
-  #step_interval
-  #e.g. 0.1
-
-  #overlapping_gens
-  #e.g. FALSE
-
-  #gene_flow_vector
-  #e.g. NA - not required if overlapping_gens=FALSE
-
-  #min_prop_fams
-  #e.g. 1
-
-  # cand_parents_fixed_initial <- candidate_parents[!is.na(candidate_parents$lb), "Indiv"]
 
   #  if(length(cand_parents_fixed_initial) >= (1 / indiv_contbn)) {break("Fixed contributions of indivuals equal to or greater than possible number based on indiv_contbn")}
   set.seed(12345)
@@ -229,8 +166,6 @@ OCFam  <- function(ped,
   ped$AVAIL_BROOD <- ped$Indiv %in% candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM, "Indiv"]
 
   ped$Breed <- "Breed_ignored"
-
-  #ped <- dplyr::left_join(ped, candidate_parents[,c("Indiv", "N_AS_PARENT_PREV")], by = "Indiv")
 
   ################################################################################
   #Inputs for optiSel
@@ -272,14 +207,12 @@ OCFam  <- function(ped,
     ped <- rbind(ped, tmp)
     rm(tmp)
 
-
     ped$isCandidate <- FALSE
     ped$isCandidate <- ped$Indiv %in% candidate_parents$Indiv
 
     keep = ped[ped$isCandidate | !ped$Mature,"Indiv"] #keep if isCandidate or is immature
     Pedig <- optiSel::prePed(Pedig = ped, keep = keep) #keep if isCandidate or is immature
     fPED <- optiSel::pedIBD(Pedig, keep.only = keep)
-
 
     #replace immature year classes with family K matrix as per Hamilton paper
     fam_K <- OCFam::get_fam_K_matrix(Pedig, Pedig[!Pedig$Mature,"Indiv"])
@@ -332,7 +265,6 @@ OCFam  <- function(ped,
     lb <- lb[cand$phen$Indiv]
   }
 
-
   if(is.na(kinship_constraint)) {
     opticont_method = "min.fPED"
   } else {
@@ -345,31 +277,17 @@ OCFam  <- function(ped,
 
   #identify candidate families
 
-
-
-  #modified this code to limit only families in the youngest year class
-
-
-
-
   cand_fams  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv, "FAM"]))
   cand_fams_in_youngest_age_class  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv &
                                                           ped$Born == max(ped$Born), "FAM"]))
 
-  #cand_fams_in_youngest_age_class <- unlist(unique(ped[ped$Indiv %in%
-  #                                                       candidate_parents[candidate_parents$Born == max(candidate_parents$Born),  "Indiv"],
-  #                                                     "FAM"]))
-  # cand_fams_in_oldest_age_class <- cand_fams[!cand_fams %in% cand_fams_in_youngest_age_class]
-
   fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "FAM"])) #contribution > 0
   fixed_fams_in_youngest_age_class <- fixed_fams[fixed_fams %in% cand_fams_in_youngest_age_class]
 
-  # fixed_fams <- unique(ped[ped$Indiv %in% ped[!is.na(ped$N_AS_PARENT_PREV),"Indiv"], "FAM"])
-
   fam_K_matrix <- OCFam::get_fam_K_matrix(ped = ped,
                                           cand_fams = cand_fams)
-  print(fam_K_matrix)
-  mean(fam_K_matrix)
+  # print(fam_K_matrix)
+  # mean(fam_K_matrix)
   # write.csv(fam_K_matrix, "fam_K_matrix.csv")
 
   fam_K_matrix_in_youngest_age_class <- fam_K_matrix[rownames(fam_K_matrix) %in% cand_fams_in_youngest_age_class,
@@ -400,10 +318,6 @@ OCFam  <- function(ped,
      min_N_parent_fams_to_retain_in_youngest_age_class,
      cand_fams_in_youngest_age_class)
 
-
-
-
-
 tmp <- ped
 tmp$oc <- tmp$EBV
 
@@ -416,12 +330,14 @@ tmp$oc <- tmp$EBV
 
   ub_orig <- ub
   lb_orig <- lb
+
   ################################################################################
   #2. identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
   ################################################################################
 
 #  fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
 #                               ub = ub, lb = lb, opticont_method = opticont_method)
+
  ub_tmp <- ub
 ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
 lb_tmp <- lb
@@ -430,10 +346,6 @@ lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                                ub = ub_tmp, lb = lb_tmp, opticont_method = opticont_method)
   rm(ub_tmp, lb_tmp)
-  ###############################################
-  #Without family counts the code below results in some suboptimal parents within families being selected.
-
-
 
   count <- floor(round(fit$parent$oc/indiv_contbn,4))
   count[count > 1] <- 1 #if greater than one then limit to one
@@ -469,10 +381,6 @@ lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
     print(paste("Iteration adjustment = ",adj))
     print(paste("max_sum_oc = ",max_sum_oc))
     print(paste("indiv_contbn * adj = ",indiv_contbn * adj))
-
-
-    #  if(cand_parents_fixed_past_iteration < 1 / indiv_contbn) {
-
 
     if(max_sum_oc > (indiv_contbn * adj)) {
 
@@ -524,16 +432,22 @@ lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
     }
 
     lb_table <- rbind(lb_table,lb)
-    #if already have enough parents the break after one addition iteration
+
+
+
+
+
+    #Need to fix contributions from males or females once there are enough
+
+
+
+
+
+    #if already have enough parents then break after one addition iteration
     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
        length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
 
   }
-  #}
-  #From last successful iteration with finer steps (step_interval^2)
-  #  for(adj in  seq(final_adj - step_interval^2, final_adj - step_interval + step_interval^2, -step_interval^2)) {
-  #    source("C:/Users/MHamilton/OneDrive - CGIAR/Current/Bangladesh Carp/Mate allocation and parent selection/CGIP optimal contributions/CGIP OC step 3 01.R")
-  #  }
 
   print("FINAL ITERATION")
   print(paste("Count parents previous iteration =",length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )), "of", 1 / indiv_contbn))
