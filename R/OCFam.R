@@ -322,7 +322,7 @@ OCFam  <- function(ped,
 
   additional_parents_fixed <- OCFam::get_best_indiv(fish = tmp[tmp$AVAIL_BROOD ,], #exclude animals previously used as parents
                                                     additional_fams_to_retain = additional_fams_to_retain,
-                                                    candidate_parents = candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM,"Indiv"])
+                                                    candidates = candidate_parents[!candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM,"Indiv"])
   ub[names(ub) %in% additional_parents_fixed] <- indiv_contbn
   lb[names(lb) %in% additional_parents_fixed] <- indiv_contbn - 1e-10
   rm(additional_parents_fixed, additional_fams_to_retain)
@@ -371,6 +371,8 @@ OCFam  <- function(ped,
 
   max_sum_oc <- 1
 
+  candidate_parents <- merge(candidate_parents, ped[,c("Indiv", "Sex")], by = "Indiv") #get Sex
+
   for(adj in seq(1,0,-step_interval)) {
 
     prev_count <- length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration ))
@@ -406,31 +408,26 @@ OCFam  <- function(ped,
               fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
             max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
-#            if(!is.na(candidate_parents$Sex[1])) {
-#              #  fix contributions from males or females once there are enough from either sex
-#              sum_male_lb <- sum(lb[names(lb) %in% male_indiv], na.rm = TRUE) # Match male identifiers in lb and sum the corresponding values
-#              count_male_fixed <- sum_male_lb / indiv_contbn
-#              count_male_req <- N_fams - count_male_fixed
-#
-#              sum_female_lb <- sum(lb[names(lb) %in% female_indiv], na.rm = TRUE) # Match female identifiers in lb and sum the corresponding values
-#              count_female_fixed <- sum_female_lb / indiv_contbn
-#              count_female_req <- N_fams - count_female_fixed
-#
-#
-#            tmp <- candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]
-#
-#            }
+            if(!is.na(candidate_parents$Sex[1])) {
+              #  fix contributions from males or females once there are enough from either sex
+              sum_male_lb <- sum(lb[names(lb) %in% male_indiv], na.rm = TRUE) # Match male identifiers in lb and sum the corresponding values
+              count_male_fixed <- sum_male_lb / indiv_contbn
+              count_male_req <- N_fams - count_male_fixed
 
+              sum_female_lb <- sum(lb[names(lb) %in% female_indiv], na.rm = TRUE) # Match female identifiers in lb and sum the corresponding values
+              count_female_fixed <- sum_female_lb / indiv_contbn
+              count_female_req <- N_fams - count_female_fixed
 
-
-#              #Need to change get_best_indiv to up to count_male_req and count_female_req if sex != NA !!!!!!!!!!!!!
-
-
-
+            } else {
+              count_male_req <- NA
+              count_female_req <- NA
+            }
 
             cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                           additional_fams_to_retain = fams_to_retain,
-                                                                          candidate_parents = tmp)
+                                                                          candidates = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"],
+                                                                          count_male_req = count_male_req,
+                                                                          count_female_req = count_female_req)
 
             ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
             ub <- ub[cand$phen$Indiv]
@@ -716,12 +713,25 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 ################################################################################
 
 #' @export
-get_best_indiv <- function(fish, additional_fams_to_retain, candidate_parents) {
+get_best_indiv <- function(fish, additional_fams_to_retain, candidates, count_male_req = NA, count_female_req = NA) {
   tmp <- fish[order(fish$oc, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
-               tmp$Indiv %in% candidate_parents,]
+               tmp$Indiv %in% candidates,]
   cand_parents_fixed <- tmp[!duplicated(tmp$FAM),]
   cand_parents_fixed <- cand_parents_fixed[order(cand_parents_fixed$FAM),"Indiv"]
+
+  if(!is.na(count_male_req) | !is.na(count_female_req)) {
+    males <- candidates[candidates$Sex == "male" & !is.na(candidates$Sex), "Indiv"]
+    males_fixed <- cand_parents_fixed[cand_parents_fixed %in% males]
+    males_fixed <- males_fixed[1:min(count_male_req,length(males_fixed))]
+
+    females <- candidates[candidates$Sex == "female" & !is.na(candidates$Sex), "Indiv"]
+    females_fixed <- cand_parents_fixed[cand_parents_fixed %in% females]
+    females_fixed <- females_fixed[1:min(count_female_req,length(females_fixed))]
+
+    cand_parents_fixed <- c(males_fixed, females_fixed)
+  }
+
   rm(tmp)
   return (cand_parents_fixed)
 }
