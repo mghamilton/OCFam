@@ -359,12 +359,12 @@ OCFam  <- function(ped,
   lb <- lb[cand$phen$Indiv]
   lb <- lb[names(lb) %in%  names(lb_orig)]
 
-  lb_table <- lb
-
   ################################################################################
   #3.  add to list of cand_parents_fixed the best individual from families highly represented in OC
   #      - add individuals consecutively with families highly represented in OC fixed first
   ################################################################################
+  male_indiv <- Pedig$Indiv[Pedig$Sex == "male"] # Subset the Pedig dataframe for male individuals
+  female_indiv <- Pedig$Indiv[Pedig$Sex == "female"] # Subset the Pedig dataframe for male individuals
 
   cand_parents_fixed_current_iteration <- NA #lb[lb != 0]
   cand_parents_fixed_past_iteration <- NULL
@@ -406,9 +406,31 @@ OCFam  <- function(ped,
               fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
             max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
+#            if(!is.na(candidate_parents$Sex[1])) {
+#              #  fix contributions from males or females once there are enough from either sex
+#              sum_male_lb <- sum(lb[names(lb) %in% male_indiv], na.rm = TRUE) # Match male identifiers in lb and sum the corresponding values
+#              count_male_fixed <- sum_male_lb / indiv_contbn
+#              count_male_req <- N_fams - count_male_fixed
+#
+#              sum_female_lb <- sum(lb[names(lb) %in% female_indiv], na.rm = TRUE) # Match female identifiers in lb and sum the corresponding values
+#              count_female_fixed <- sum_female_lb / indiv_contbn
+#              count_female_req <- N_fams - count_female_fixed
+#
+#
+#            tmp <- candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]
+#
+#            }
+
+
+
+#              #Need to change get_best_indiv to up to count_male_req and count_female_req if sex != NA !!!!!!!!!!!!!
+
+
+
+
             cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                           additional_fams_to_retain = fams_to_retain,
-                                                                          candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
+                                                                          candidate_parents = tmp)
 
             ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
             ub <- ub[cand$phen$Indiv]
@@ -430,19 +452,7 @@ OCFam  <- function(ped,
       }
     }
 
-    lb_table <- rbind(lb_table,lb)
-
-
-
-
-
-    #Need to fix contributions from males or females once there are enough
-
-
-
-
-
-    #if already have enough parents then break after one addition iteration
+    #if already have enough parents then break after one additional iteration
     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
        length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
 
@@ -692,14 +702,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
     }
 
   }
-  print(cand$mean)
 
-  #  if(opticont_method == "max.EBV") {  #for unknown reasons max.EBV doesn't seem to work
-  #  cand$phen$EBV <- (-1) * cand$phen$EBV
-  #  fit <- optiSel::opticont(method = "min.EBV", cand = cand, con = con,
-  #                           solver="cccp2")
-  #  cand$phen$EBV <- (-1) * cand$phen$EBV
-  #  } else {
   fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
                            solver="cccp2")
   #  }
