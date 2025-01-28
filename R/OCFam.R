@@ -426,6 +426,7 @@ OCFam  <- function(ped,
             cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
                                                                           additional_fams_to_retain = fams_to_retain,
                                                                           candidates = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"],
+                                                                          candidates_sex <- candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),c("Indiv", "Sex")],
                                                                           count_male_req = count_male_req,
                                                                           count_female_req = count_female_req)
 
@@ -450,8 +451,10 @@ OCFam  <- function(ped,
     }
 
     #if already have enough parents then break after one additional iteration
-    if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
-       length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
+  #  if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
+  #     length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
+    #if not identifying additional parents then break
+        if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
 
   }
 
@@ -492,108 +495,80 @@ OCFam  <- function(ped,
   A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
 
-  tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-  N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-  N_retain <- round(N_retain,0)
-  rm(tmp)
 
-  while(nrow(A_mat) > N_retain) {
-    tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-    tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-    tmp <- names(tmp[tmp == max(tmp)])
-    A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
+    if(sum(is.na(candidate_parents$Sex)) > 0) { #if sex is not defined
+    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
+    N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+    N_retain <- round(N_retain,0)
     rm(tmp)
-  }
-  rm(N_retain)
 
-  indivs_to_retain <- colnames(A_mat)
-  rm(A_mat)
+    while(nrow(A_mat) > N_retain) {
+      tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
+      tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
+      tmp <- names(tmp[tmp == max(tmp)])
+      A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
+      rm(tmp)
+    }
+    rm(N_retain)
 
+    indivs_to_retain <- colnames(A_mat)
+    rm(A_mat)
 
-  ################################################################################
-  # THE FOLLOWING CODE WORKS BUT CAN RESULT IN INSUFFICIENT INDIVIDUALS SELECTED.
-  # CURRENTLY JUST ACCEPT THAT ADJUSTMENT FOR SEX CONTRIBUTIONS MAY BE REQUIRED.!!!!!!
-  ################################################################################
+    } else {
 
-  #  if(sum(is.na(ped$Sex)) > 0) { #if sex is not defined
-  #  tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-  #  N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-  #  N_retain <- round(N_retain,0)
-  #  rm(tmp)
+     #males##############################################
+      males <- ped[ped$Sex == "male", "Indiv"]
 
-  #  while(nrow(A_mat) > N_retain) {
-  #    tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-  #    tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-  #    tmp <- names(tmp[tmp == max(tmp)])
-  #    A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
-  #    rm(tmp)
-  #  }
-  #  rm(N_retain)
+      tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
+      N_retain_males <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+      N_retain_males <- round(N_retain_males,0)
+      rm(tmp)
 
-  #  indivs_to_retain <- colnames(A_mat)
-  #  rm(A_mat)
+      A_mat <- A_mat[rownames(A_mat) %in% males,colnames(A_mat) %in% males]
 
-  #  } else {
+      while(nrow(A_mat) > N_retain_males) {
+        tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
+        tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
+        tmp <- tmp[names(tmp) %in% males]
+        tmp <- names(tmp[tmp == max(tmp)])
+        A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
+        rm(tmp)
+      }
+      rm(N_retain_males)
 
-  #   #males##############################################
-  #    males <- ped[ped$Sex == "male", "Indiv"]
-
-  #    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-  #    N_retain_males <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-  #    N_retain_males <- round(N_retain_males,0)
-  #    rm(tmp)
-
-  #    A_mat <- A_mat[rownames(A_mat) %in% males,colnames(A_mat) %in% males]
-
-  #    while(nrow(A_mat) > N_retain_males) {
-  #      tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-  #      tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-  #      tmp <- tmp[names(tmp) %in% males]
-  #      tmp <- names(tmp[tmp == max(tmp)])
-  #      A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
-  #      rm(tmp)
-  #    }
-  #    rm(N_retain_males)
-
-  #    indivs_to_retain <- colnames(A_mat)
-  #    rm(A_mat)
+      indivs_to_retain <- colnames(A_mat)
+      rm(A_mat)
 
 
-  #    #females##############################################
+      #females##############################################
 
-  #    males_removed <- cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males][!cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males] %in% indivs_to_retain]
+      males_removed <- cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males][!cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males] %in% indivs_to_retain]
 
-  #    A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed[!cand_parents_fixed %in% males_removed])
+      A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed[!cand_parents_fixed %in% males_removed])
 
-  #    A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
+      A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
 
-  #    females <- ped[ped$Sex == "female", "Indiv"]
+      females <- ped[ped$Sex == "female", "Indiv"]
 
-  #    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-  #    N_retain_females <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-  #    N_retain_females <- round(N_retain_females,0)
-  #    rm(tmp)
+      tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
+      N_retain_females <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+      N_retain_females <- round(N_retain_females,0)
+      rm(tmp)
 
-  #    A_mat <- A_mat[rownames(A_mat) %in% females,colnames(A_mat) %in% females]
-  #    while(nrow(A_mat) > N_retain_females) {
-  #      tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-  #      tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-  #      tmp <- tmp[names(tmp) %in% females]
-  #      tmp <- names(tmp[tmp == max(tmp)])
-  #      A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
-  #      rm(tmp)
-  #    }
-  #    rm(N_retain_females)
+      A_mat <- A_mat[rownames(A_mat) %in% females,colnames(A_mat) %in% females]
+      while(nrow(A_mat) > N_retain_females) {
+        tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
+        tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
+        tmp <- tmp[names(tmp) %in% females]
+        tmp <- names(tmp[tmp == max(tmp)])
+        A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
+        rm(tmp)
+      }
+      rm(N_retain_females)
 
-  #    indivs_to_retain <- c(indivs_to_retain, colnames(A_mat))
-  #    rm(A_mat)
-  #  }
-
-
-
-
-
-
+      indivs_to_retain <- c(indivs_to_retain, colnames(A_mat))
+      rm(A_mat)
+    }
 
   #need to add the total contributions of all individuals to parents
   tmp <- data.frame(Indiv = names(lb)[names(lb) %in% indivs_to_retain],
@@ -650,16 +625,10 @@ OCFam  <- function(ped,
               fit_out      = fit_out))#, summary.opticont = summary.opticont
 }
 
-
-
-
-
 #The script includes the following non-base R functions:
 #
 # optiSel::opticont
 # AGHmatrix::Amatrix
-
-
 
 ################################################################################
 #function to run optiSel::opticont depending on opticont_method
@@ -713,7 +682,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 ################################################################################
 
 #' @export
-get_best_indiv <- function(fish, additional_fams_to_retain, candidates, count_male_req = NA, count_female_req = NA) {
+get_best_indiv <- function(fish, additional_fams_to_retain, candidates, candidates_sex = NA, count_male_req = NA, count_female_req = NA) {
   tmp <- fish[order(fish$oc, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
                tmp$Indiv %in% candidates,]
@@ -721,11 +690,11 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidates, count_ma
   cand_parents_fixed <- cand_parents_fixed[order(cand_parents_fixed$FAM),"Indiv"]
 
   if(!is.na(count_male_req) | !is.na(count_female_req)) {
-    males <- candidates[candidates$Sex == "male" & !is.na(candidates$Sex), "Indiv"]
+    males <- candidates_sex[candidates_sex[,"Sex"] == "male" & !is.na(candidates_sex[,"Sex"]), "Indiv"]
     males_fixed <- cand_parents_fixed[cand_parents_fixed %in% males]
     males_fixed <- males_fixed[1:min(count_male_req,length(males_fixed))]
 
-    females <- candidates[candidates$Sex == "female" & !is.na(candidates$Sex), "Indiv"]
+    females <- candidates_sex[candidates_sex[,"Sex"] == "female" & !is.na(candidates_sex[,"Sex"]), "Indiv"]
     females_fixed <- cand_parents_fixed[cand_parents_fixed %in% females]
     females_fixed <- females_fixed[1:min(count_female_req,length(females_fixed))]
 
