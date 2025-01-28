@@ -317,8 +317,8 @@ OCFam  <- function(ped,
      min_N_parent_fams_to_retain_in_youngest_age_class,
      cand_fams_in_youngest_age_class)
 
-tmp <- ped
-tmp$oc <- tmp$EBV
+  tmp <- ped
+  tmp$oc <- tmp$EBV
 
   additional_parents_fixed <- OCFam::get_best_indiv(fish = tmp[tmp$AVAIL_BROOD ,], #exclude animals previously used as parents
                                                     additional_fams_to_retain = additional_fams_to_retain,
@@ -334,13 +334,13 @@ tmp$oc <- tmp$EBV
   #2. identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
   ################################################################################
 
-#  fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
-#                               ub = ub, lb = lb, opticont_method = opticont_method)
+  #  fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
+  #                               ub = ub, lb = lb, opticont_method = opticont_method)
 
- ub_tmp <- ub
-ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
-lb_tmp <- lb
-lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
+  ub_tmp <- ub
+  ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
+  lb_tmp <- lb
+  lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
 
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                                ub = ub_tmp, lb = lb_tmp, opticont_method = opticont_method)
@@ -386,39 +386,39 @@ lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
       if((sum(lb)) < 1) {
 
         if(adj != 1) {
-        cand_parents_fixed_past_iteration <- names(lb[lb!=0])
+          cand_parents_fixed_past_iteration <- names(lb[lb!=0])
 
-        cand_parents_not_fixed <- fit$parent[!fit$parent$Indiv %in% cand_parents_fixed_past_iteration,]
+          cand_parents_not_fixed <- fit$parent[!fit$parent$Indiv %in% cand_parents_fixed_past_iteration,]
 
-        #   cand_parents_fixed_past_iteration <- c(cand_parents_not_fixed[!cand_parents_not_fixed$AVAIL_BROOD, "Indiv"],
-        #                                         cand_parents_fixed_past_iteration) #some families failed but parents in "PARENT" cohort (and pond)
-        cand_parents_not_fixed <- cand_parents_not_fixed[cand_parents_not_fixed$AVAIL_BROOD, ]
+          #   cand_parents_fixed_past_iteration <- c(cand_parents_not_fixed[!cand_parents_not_fixed$AVAIL_BROOD, "Indiv"],
+          #                                         cand_parents_fixed_past_iteration) #some families failed but parents in "PARENT" cohort (and pond)
+          cand_parents_not_fixed <- cand_parents_not_fixed[cand_parents_not_fixed$AVAIL_BROOD, ]
 
-        fam_contbn_not_fixed <- aggregate(cand_parents_not_fixed$oc, by = list(cand_parents_not_fixed$FAM), FUN = "sum")
-        colnames(fam_contbn_not_fixed) <- c("FAM", "sum_oc")
+          fam_contbn_not_fixed <- aggregate(cand_parents_not_fixed$oc, by = list(cand_parents_not_fixed$FAM), FUN = "sum")
+          colnames(fam_contbn_not_fixed) <- c("FAM", "sum_oc")
 
-        fams_to_retain <- fam_contbn_not_fixed[fam_contbn_not_fixed$sum_oc > (indiv_contbn * adj), "FAM"]
+          fams_to_retain <- fam_contbn_not_fixed[fam_contbn_not_fixed$sum_oc > (indiv_contbn * adj), "FAM"]
 
-        if(length(fams_to_retain) > 0) { #probably should allow more than one individual to be fixed per iteration but any missed will be picked up in next iteration and so like that impact is minimal
+          if(length(fams_to_retain) > 0) { #probably should allow more than one individual to be fixed per iteration but any missed will be picked up in next iteration and so like that impact is minimal
 
-          #get max_sum_oc
-          fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] <-
-            fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
-          max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
+            #get max_sum_oc
+            fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] <-
+              fam_contbn_not_fixed[fam_contbn_not_fixed$FAM %in% fams_to_retain, "sum_oc"] - indiv_contbn # accounting for individuals fixed in this iteration
+            max_sum_oc <- max(fam_contbn_not_fixed$sum_oc)
 
-          cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
-                                                                        additional_fams_to_retain = fams_to_retain,
-                                                                        candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
+            cand_parents_fixed_current_iteration <- OCFam::get_best_indiv(fish = cand_parents_not_fixed,
+                                                                          additional_fams_to_retain = fams_to_retain,
+                                                                          candidate_parents = candidate_parents[is.na(candidate_parents$N_AS_PARENT_PREV),"Indiv"]) #exclude animals previously used as parents including those families that subsequently died and are now in the "PARENT" pond
 
-          ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
-          ub <- ub[cand$phen$Indiv]
-          ub <- ub[names(ub) %in%  names(ub_orig)]
+            ub[names(ub) %in% cand_parents_fixed_current_iteration] <- indiv_contbn
+            ub <- ub[cand$phen$Indiv]
+            ub <- ub[names(ub) %in%  names(ub_orig)]
 
-          lb[names(lb) %in% cand_parents_fixed_current_iteration] <- indiv_contbn -1e-10
-          lb <- lb[cand$phen$Indiv]
-          lb <- lb[names(lb) %in%  names(lb_orig)]
+            lb[names(lb) %in% cand_parents_fixed_current_iteration] <- indiv_contbn -1e-10
+            lb <- lb[cand$phen$Indiv]
+            lb <- lb[names(lb) %in%  names(lb_orig)]
 
-        }
+          }
         }
         if(adj != 0) {
           try(fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint, ub = ub, lb = lb, opticont_method = opticont_method))
@@ -694,15 +694,15 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   }
   print(cand$mean)
 
-#  if(opticont_method == "max.EBV") {  #for unknown reasons max.EBV doesn't seem to work
-#  cand$phen$EBV <- (-1) * cand$phen$EBV
-#  fit <- optiSel::opticont(method = "min.EBV", cand = cand, con = con,
-#                           solver="cccp2")
-#  cand$phen$EBV <- (-1) * cand$phen$EBV
-#  } else {
-    fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
-                             solver="cccp2")
-#  }
+  #  if(opticont_method == "max.EBV") {  #for unknown reasons max.EBV doesn't seem to work
+  #  cand$phen$EBV <- (-1) * cand$phen$EBV
+  #  fit <- optiSel::opticont(method = "min.EBV", cand = cand, con = con,
+  #                           solver="cccp2")
+  #  cand$phen$EBV <- (-1) * cand$phen$EBV
+  #  } else {
+  fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
+                           solver="cccp2")
+  #  }
 
   return(fit)
 }
