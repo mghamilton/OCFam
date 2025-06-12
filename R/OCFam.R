@@ -338,9 +338,9 @@ OCFam  <- function(ped,
   #                               ub = ub, lb = lb, opticont_method = opticont_method)
 
   ub_tmp <- ub
-  ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
+ # ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
   lb_tmp <- lb
-  lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
+ #  lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
 
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                                ub = ub_tmp, lb = lb_tmp, opticont_method = opticont_method)
