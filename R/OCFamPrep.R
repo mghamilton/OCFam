@@ -67,7 +67,10 @@
 #'  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
 #'  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
 #'  }
-#' @return gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+#' @return 'gene_flow_vector' is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+#' @return 'r' is a weight vector of age classes; r[i] denotes the long-term contribution of age class i (until lifetime is reached).  See Meuwissen, T. H. E. and A. K. Sonesson. 1998. Maximizing the response of selection with a predefined rate of inbreeding: overlapping generations.
+#' @return 'gen_interval' is the generation interval.
+
 #' @examples
 #' #Retrieve example data
 #' ped <- OCFam::ped
@@ -164,17 +167,26 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
 
   if(is.null(gene_flow_vector)) {
     age_class_means <- rbind(age_class_F, age_class_K)
-
+    r <- 1
+    gen_interval <- 1
   }
 
     age_class_K_overlap <-  data.frame(BORN = age_classs, VARIABLE = "Coancestry (overlapping; k)", MEAN = NA)
 
   if(!is.null(gene_flow_vector)) {
+
+    gen_interval  <- gene_flow_vector %*% c(length(gene_flow_vector):1)
+
+    r <- rep(NA,length(gene_flow_vector))
+    for (i in 1:length(gene_flow_vector)) {
+      r[i] <- sum(gene_flow_vector[1:i])/gen_interval
+    }
+
     for(ac in age_classs[length(gene_flow_vector):length(age_classs)]) {
-      age_class_K_overlap[age_class_K_overlap$BORN == ac,"MEAN"] <-  t(gene_flow_vector) %*%
-        age_class_K_mat[as.character((ac-length(gene_flow_vector)+1):ac),
-                        as.character((ac-length(gene_flow_vector)+1):ac)] %*%
-        gene_flow_vector
+      age_class_K_overlap[age_class_K_overlap$BORN == ac,"MEAN"] <-  t(r) %*%
+        age_class_K_mat[as.character((ac-length(r)+1):ac),
+                        as.character((ac-length(r)+1):ac)] %*%
+        r
     }
     age_class_means <- rbind(age_class_F, age_class_K, age_class_K_overlap)
   }
@@ -223,7 +235,9 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
               age_class_means = age_class_means,
               ped = ped,
               family_ped = family_ped,
-              gene_flow_vector = gene_flow_vector))
+              gene_flow_vector = gene_flow_vector),
+              r = r,
+              gen_interval = gen_interval)
 }
 
 
@@ -284,4 +298,26 @@ OCFam_fam_K_matrix <- function(family_ped) {
               family_inbreeding = family_inbreeding))
 }
 
+get.r <- function(gene_flow_vector) {
+
+  #generation interval
+
+
+  #r
+  gene_flow_vector$r <- NA
+  gene_flow_vector$age_t_plus_1 <- gene_flow_vector$age - 1
+  for(age in max(gene_flow_vector$age):1) {
+    gene_flow_vector[gene_flow_vector$sex == "male" & gene_flow_vector$age == age,"r"] <- sum(gene_flow_vector[gene_flow_vector$sex == "male" & gene_flow_vector$age %in% (max(gene_flow_vector$age):age),"s_1_plus_s_2"]) / Lbar_male
+  }
+  for(age in max(gene_flow_vector$age):1) {
+    gene_flow_vector[gene_flow_vector$sex == "female" & gene_flow_vector$age == age,"r"] <- sum(gene_flow_vector[gene_flow_vector$sex == "female" & gene_flow_vector$age %in% (max(gene_flow_vector$age):age),"s_1_plus_s_2"]) / Lbar_female
+  }
+
+  gene_flow_vector <- gene_flow_vector
+
+  return(list(n_fams = n_fams,
+              Lbar_male = Lbar_male,
+              Lbar_female = Lbar_female,
+              gene_flow_vector = gene_flow_vector))
+}
 
