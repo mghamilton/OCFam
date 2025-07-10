@@ -28,22 +28,22 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
 \value{
 'plot' is plot of trends in coancestry and inbreeding coefficients
 
-'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
-
-'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
-
-'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
-\itemize{
- \item{'FAM' is the family identifier (character).}
- \item{'F' is the Wright's inbreeding coefficient for individuals in the family (numeric).}
-}
-
 'age_class_means' is a dataframe listing inbreeding coefficients for individuals within families.
 \itemize{
  \item{'BORN' is age class (integer).}
  \item{'INBREEDING' is the average Wright's inbreeding coefficient of families in the age class (numeric).}
  \item{'COANCESTRY' is the average coancestry between families in the age class (numeric).}
  \item{'OVERLAPPING_COANCESTRY' is the average coancestry between families weighted by the age class contributions specified in the gene_flow_vector (numeric).}
+}
+
+'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
+
+'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
+
+'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
+\itemize{
+ \item{'FAM' is the family identifier (character).}
+ \item{'F' is the Wright's inbreeding coefficient for individuals in the family (numeric).}
 }
 
 'ped' is a data frame with the following columns (class in parentheses):
