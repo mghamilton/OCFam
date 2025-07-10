@@ -193,23 +193,23 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
 
     age_class_means$BORN <-  as.numeric(age_class_means$BORN)
 
-   if(is.null(age_class_names)) {
-  p <- ggplot(age_class_means, aes(x=BORN, y=MEAN, group=VARIABLE))
-   } else {
-     age_class_means <- dplyr::left_join(age_class_means, age_class_names, by = "BORN")
-     ped <- dplyr::left_join(ped, age_class_names, by = "BORN")
-     family_ped <- dplyr::left_join(family_ped, age_class_names, by = "BORN")
+    if(is.null(age_class_names)) {
+      p <- ggplot(age_class_means, aes(x=BORN, y=MEAN, group=VARIABLE))
+    } else {
+      age_class_means <- dplyr::left_join(age_class_means, age_class_names, by = "BORN")
+      ped <- dplyr::left_join(ped, age_class_names, by = "BORN")
+      family_ped <- dplyr::left_join(family_ped, age_class_names, by = "BORN")
 
-     # Ensure AGE_CLASS_NAME is ordered by BORN
-     age_class_means <- age_class_means[order(age_class_means$BORN), ]
+      # Ensure AGE_CLASS_NAME is ordered by BORN
+      age_class_means <- age_class_means[order(age_class_means$BORN), ]
 
-     # Reassign AGE_CLASS_NAME as a factor, now ordered by BORN
-     age_class_means$AGE_CLASS_NAME <- factor(age_class_means$AGE_CLASS_NAME,
-                                              levels = unique(age_class_means$AGE_CLASS_NAME))
+      # Reassign AGE_CLASS_NAME as a factor, now ordered by BORN
+      age_class_means$AGE_CLASS_NAME <- factor(age_class_means$AGE_CLASS_NAME,
+                                               levels = unique(age_class_means$AGE_CLASS_NAME))
 
-     p <- ggplot(age_class_means, aes(x=AGE_CLASS_NAME, y=MEAN, group=VARIABLE))
+      p <- ggplot(age_class_means, aes(x=AGE_CLASS_NAME, y=MEAN, group=VARIABLE))
 
-   }
+    }
     p <- p +
       geom_line(aes(color=VARIABLE))+
       geom_point(aes(color=VARIABLE)) +
@@ -235,9 +235,9 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
               age_class_means = age_class_means,
               ped = ped,
               family_ped = family_ped,
-              gene_flow_vector = gene_flow_vector),
+              gene_flow_vector = gene_flow_vector,
               r = r,
-              gen_interval = gen_interval)
+              gen_interval = gen_interval))
 }
 
 

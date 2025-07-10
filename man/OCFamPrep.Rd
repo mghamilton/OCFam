@@ -28,9 +28,9 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
 \value{
 'plot' is plot of trends in coancestry and inbreeding coefficients
 
-'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations).  Row and column names are the FAM identifiers from "ped".
+'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
 
-'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from "ped".
+'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
 
 'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
 \itemize{
@@ -74,7 +74,11 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
  }
 
-gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+'gene_flow_vector' is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+
+'r' is a weight vector of age classes; r[i] denotes the long-term contribution of age class i (until lifetime is reached).  See Meuwissen, T. H. E. and A. K. Sonesson. 1998. Maximizing the response of selection with a predefined rate of inbreeding: overlapping generations.
+
+'gen_interval' is the generation interval.
 }
 \description{
 This functions provides tables and plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F)
