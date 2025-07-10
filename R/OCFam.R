@@ -80,6 +80,7 @@
 #' @import optiSel
 #' @import AGHmatrix
 #' @import dplyr
+#' @import ggplot2
 #' @export
 
 #Functions that are not base R functions
