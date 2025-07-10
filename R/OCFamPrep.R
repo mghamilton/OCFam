@@ -27,19 +27,19 @@
 #' @param gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
 #'
 #' @return 'plot' is plot of trends in coancestry and inbreeding coefficients
-#' @return 'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
-#' @return 'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
-#' @return 'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
-#' \itemize{
-#'  \item{'FAM' is the family identifier (character).}
-#'  \item{'F' is the Wright's inbreeding coefficient for individuals in the family (numeric).}
-#' }
 #' @return 'age_class_means' is a dataframe listing inbreeding coefficients for individuals within families.
 #' \itemize{
 #'  \item{'BORN' is age class (integer).}
 #'  \item{'INBREEDING' is the average Wright's inbreeding coefficient of families in the age class (numeric).}
 #'  \item{'COANCESTRY' is the average coancestry between families in the age class (numeric).}
 #'  \item{'OVERLAPPING_COANCESTRY' is the average coancestry between families weighted by the age class contributions specified in the gene_flow_vector (numeric).}
+#' }
+#' @return 'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
+#' @return 'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
+#' @return 'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
+#' \itemize{
+#'  \item{'FAM' is the family identifier (character).}
+#'  \item{'F' is the Wright's inbreeding coefficient for individuals in the family (numeric).}
 #' }
 #' @return 'ped' is a data frame with the following columns (class in parentheses):
 #' \itemize{
@@ -229,10 +229,10 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
                                 OVERLAPPING_COANCESTRY = age_class_K_overlap$MEAN)
 
   return(list(plot = p,
-              fam_K_matrix = fam_K_matrix,
-              age_class_K_mat = age_class_K_mat,
-              family_inbreeding = family_inbreeding,
               age_class_means = age_class_means,
+              age_class_K_mat = age_class_K_mat,
+              fam_K_matrix = fam_K_matrix,
+              family_inbreeding = family_inbreeding,
               ped = ped,
               family_ped = family_ped,
               gene_flow_vector = gene_flow_vector,
