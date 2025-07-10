@@ -1,43 +1,21 @@
 
-##########################################################################################
-#OCFam_fam_K_matrix
-##########################################################################################
-
-
-
-rm(list=ls())
-setwd("C:/Users/MHamilton/CGIAR/WorldFish DocuShare - Genetics/Data/GIFT/Spawn_rounds/G202402_TiLV_G20/08 OC")
-ped <- read.csv("ped2.csv")
-
-ped <- ped[,c("INDIV", "SIRE", "DAM", "FAM", "BORN", "EBV")]
-
-ped[ped[,"SIRE"] == "","SIRE"] <- 0
-ped[ped[,"DAM"] == "","DAM"] <- 0
-
-
-
-
-
-
-
-
 
 ##########################################################################################
 #OCFamPrep
 ##########################################################################################
-
-
+#' OCFamPrep
+#'
+#' @description
+#' This functions provides tables and plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F)
+#'
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'INDIV' is the individual identifier (character).}
 #'  \item{'SIRE' is the male parent identifier (character).}
 #'  \item{'DAM' is the female parent identifier (character).}
 #'  \item{'FAM' is a full-sibling family identifier (character).}
-#'  \item{'SEX' is the sex of the individual. "male" (or 1 = male), "female" (or 2 = female), NA if unknown.  If one animal is of unknown sex, sex will be ignored (integer or character).}
 #'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
 #'  \item{'EBV' is the estimated breeding value (numeric).}
-#'  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
-#'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
 #'  }
 #'
 #'#' @param age_class_names is an data frame specifying names for age classes (class in parentheses):
@@ -47,67 +25,69 @@ ped[ped[,"DAM"] == "","DAM"] <- 0
 #'  }
 #'
 #' @param gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
-
-#Required packages: AGHmatrix, dplyr, ggplot2
-
-
-OCFam_fam_K_matrix <- function(family_ped) {
-  #data
-  # class: data.frame
-  # fields:
-  #   FAM
-  #   SIRE
-  #   FAM_SIRE
-  #   DAM
-  #   FAM_DAM
-
-  #sires
-  sires <- matrix(unique(family_ped$SIRE), ncol = 1)
-  colnames(sires)[1] <- "SIRE"
-  sires <- merge(sires, family_ped[,c("SIRE","FAM_SIRE")], by = "SIRE", all.x = TRUE)
-  colnames(sires) <- c("Indiv_id","FAM")
-  sires <- merge(sires, family_ped[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
-  sires <- subset(sires, select=-c(FAM)) #remove FAM column
-
-  #dams
-  dams <- matrix(unique(family_ped$DAM), ncol = 1)
-  colnames(dams)[1] <- "DAM"
-  dams <- merge(dams, family_ped[,c("DAM","FAM_DAM")], by = "DAM", all.x = TRUE)
-  colnames(dams) <- c("Indiv_id","FAM")
-  dams <- merge(dams, family_ped[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
-  dams <- subset(dams, select=-c(FAM)) #remove FAM column
-
-  parents <- rbind(sires,dams)
-  parents <- unique(parents)
-  parents <- parents[order(parents[,"Indiv_id"], decreasing = FALSE), ]
-
-  families            <- unique(family_ped)
-  tmp1 <- families
-  tmp2 <- families
-  tmp1$FAM <- paste0("1_", tmp1$FAM) #needs a unique id
-  families <- rbind(tmp1, tmp2)
-
-  fam_pedigree        <- rbind(as.matrix(parents),as.matrix(families[,c("FAM","SIRE","DAM")]))
-
-  #Generate K Matrix
-  # K_matrix_families      <- nadiv::makeA(fam_pedigree[,1:3])/2
-  tmp <- fam_pedigree
-  tmp[is.na(tmp)] <- 0
-  K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
-  rm(tmp)
-
-  family_inbreeding <-  round((diag(as.matrix(K_matrix_families)) * 2) - 1, 10)
-  family_inbreeding <-  family_inbreeding[(nrow(parents)+1):(nrow(parents)+nrow(families)/2)]
-
-  K_matrix_families <- K_matrix_families[(nrow(parents)+1):(nrow(parents)+nrow(families)/2), (nrow(parents)+nrow(families)/2+1):nrow(K_matrix_families)]
-
-  rownames(K_matrix_families) <- colnames(K_matrix_families)
-  names(family_inbreeding) <- colnames(K_matrix_families)
-
-  return(list(K_matrix_families = K_matrix_families,
-              family_inbreeding = family_inbreeding))
-}
-
+#'
+#' @return 'plot' is plot of trends in coancestry and inbreeding coefficients
+#' @return 'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations).  Row and column names are the FAM identifiers from "ped".
+#' @return 'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from "ped".
+#' @return 'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
+#' \itemize{
+#'  \item{'FAM' is the family identifier (character).}
+#'  \item{'F' is the Wright's inbreeding coefficient for individuals in the family (numeric).}
+#' }
+#' @return 'age_class_means' is a dataframe listing inbreeding coefficients for individuals within families.
+#' \itemize{
+#'  \item{'BORN' is age class (integer).}
+#'  \item{'INBREEDING' is the average Wright's inbreeding coefficient of families in the age class (numeric).}
+#'  \item{'COANCESTRY' is the average coancestry between families in the age class (numeric).}
+#'  \item{'OVERLAPPING_COANCESTRY' is the average coancestry between families weighted by the age class contributions specified in the gene_flow_vector (numeric).}
+#' }
+#' @return 'ped' is a data frame with the following columns (class in parentheses):
+#' \itemize{
+#'  \item{'INDIV' is the individual identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character).}
+#'  \item{'DAM' is the female parent identifier (character).}
+#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
+#'  \item{'EBV' is the estimated breeding value (numeric).}
+#'  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
+#'  \item{'EBV_SIRE' is the estimated breeding value of the SIRE (numeric).}
+#'  \item{'FAM_DAM' is a full-sibling family identifi of the DAM (character).}
+#'  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
+#'  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
+#'  }
+# @return 'family_ped' is a data frame with the following columns (class in parentheses):
+#' \itemize{
+#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character).}
+#'  \item{'DAM' is the female parent identifier (character).}
+#'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
+#'  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
+#'  \item{'EBV_SIRE' is the estimated breeding value of the SIRE (numeric).}
+#'  \item{'FAM_DAM' is a full-sibling family identifi of the DAM (character).}
+#'  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
+#'  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
+#'  }
+#' @return gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+#' @examples
+#' #Retrieve example data
+#' ped <- OCFam::ped
+#' tail(ped)
+#'
+#' #Run OCFam function
+#' OCFamPrep_output <- OCFam::OCFamPrep(ped = ped,
+#'                              age_class_names = NA,
+#'                              gene_flow_vector = c(0.2,0.8)
+#' )
+#'
+#' OCFamPrep_output$plot
+#' OCFamPrep_output$fam_K_matrix[1:5,1:5]
+#' OCFamPrep_output$age_class_K_mat
+#' head(OCFamPrep_output$family_inbreeding)
+#' OCFamPrep_output$age_class_means
+#' @import AGHmatrix
+#' @import dplyr
+#' @import ggplot2
+#' @export
 
 
 OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
@@ -247,47 +227,61 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
 }
 
 
+OCFam_fam_K_matrix <- function(family_ped) {
+  #data
+  # class: data.frame
+  # fields:
+  #   FAM
+  #   SIRE
+  #   FAM_SIRE
+  #   DAM
+  #   FAM_DAM
 
+  #sires
+  sires <- matrix(unique(family_ped$SIRE), ncol = 1)
+  colnames(sires)[1] <- "SIRE"
+  sires <- merge(sires, family_ped[,c("SIRE","FAM_SIRE")], by = "SIRE", all.x = TRUE)
+  colnames(sires) <- c("Indiv_id","FAM")
+  sires <- merge(sires, family_ped[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
+  sires <- subset(sires, select=-c(FAM)) #remove FAM column
 
-##Export plot
-#file_name <- paste0(tempdir(),"/",
-#                    gsub(":","",Sys.time()), "_",
-#                    "_mean_coancestry_and_inbreeding.png")
-#ggsave(filename = file_name, plot = out$plot, device = "png")
-#shell.exec(file_name)
+  #dams
+  dams <- matrix(unique(family_ped$DAM), ncol = 1)
+  colnames(dams)[1] <- "DAM"
+  dams <- merge(dams, family_ped[,c("DAM","FAM_DAM")], by = "DAM", all.x = TRUE)
+  colnames(dams) <- c("Indiv_id","FAM")
+  dams <- merge(dams, family_ped[,c("FAM","SIRE","DAM")], by = "FAM", all.x = TRUE)
+  dams <- subset(dams, select=-c(FAM)) #remove FAM column
 
-#Export as Excel file
+  parents <- rbind(sires,dams)
+  parents <- unique(parents)
+  parents <- parents[order(parents[,"Indiv_id"], decreasing = FALSE), ]
 
-#https://trinkerrstuff.wordpress.com/2018/02/14/easily-make-multi-tabbed-xlsx-files-with-openxlsx/
+  families            <- unique(family_ped)
+  tmp1 <- families
+  tmp2 <- families
+  tmp1$FAM <- paste0("1_", tmp1$FAM) #needs a unique id
+  families <- rbind(tmp1, tmp2)
 
-#fam_K_matrix <- bind_cols(data.frame(Family_K_matrix = rownames(out$fam_K_matrix)),as.data.frame(out$fam_K_matrix))
+  fam_pedigree        <- rbind(as.matrix(parents),as.matrix(families[,c("FAM","SIRE","DAM")]))
 
-#dat <- list(out$fam_K_matrix,
-#            out$family_inbreeding,
-#            out$age_class_means)
+  #Generate K Matrix
+  # K_matrix_families      <- nadiv::makeA(fam_pedigree[,1:3])/2
+  tmp <- fam_pedigree
+  tmp[is.na(tmp)] <- 0
+  K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
+  rm(tmp)
 
-#names(dat) <- c(paste0("fam_K_matrix"),
-#                paste0("family_inbreeding"),
-#                paste0("age_class_means"))
+  family_inbreeding <-  round((diag(as.matrix(K_matrix_families)) * 2) - 1, 10)
+  family_inbreeding <-  family_inbreeding[(nrow(parents)+1):(nrow(parents)+nrow(families)/2)]
 
-## Create a blank workbook
-#wb <- createWorkbook()
+  K_matrix_families <- K_matrix_families[(nrow(parents)+1):(nrow(parents)+nrow(families)/2), (nrow(parents)+nrow(families)/2+1):nrow(K_matrix_families)]
 
-## Loop through the list of split tables as well as their names
-##   and add each one as a sheet to the workbook
-#Map(function(data, name){
-#  addWorksheet(wb, name)
-#  writeData(wb, name, data)
-#}, dat, names(dat))
+  rownames(K_matrix_families) <- colnames(K_matrix_families)
+  names(family_inbreeding) <- colnames(K_matrix_families)
 
-#file_name <- paste0(tempdir(),"/",
-#                    gsub(":","",Sys.time()),
-#                    " K matrices.xlsx")
-#saveWorkbook(wb, file_name, overwrite = TRUE) #save Excel workbook
-#shell.exec(file_name)
-
-
-
-
+  return(list(K_matrix_families = K_matrix_families,
+              family_inbreeding = family_inbreeding))
+}
 
 
