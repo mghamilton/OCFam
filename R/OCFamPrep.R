@@ -18,7 +18,7 @@
 #'  \item{'EBV' is the estimated breeding value (numeric).}
 #'  }
 #'
-#'#' @param age_class_names is an data frame specifying names for age classes (class in parentheses):
+#' @param age_class_names is an data frame specifying names for age classes (class in parentheses):
 #' \itemize{
 #'  \item{'AGE_CLASS_NAME' is a name for the age class (character).}
 #'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
@@ -27,8 +27,8 @@
 #' @param gene_flow_vector is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
 #'
 #' @return 'plot' is plot of trends in coancestry and inbreeding coefficients
-#' @return 'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations).  Row and column names are the FAM identifiers from "ped".
-#' @return 'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from "ped".
+#' @return 'fam_K_matrix' is a data frame containing the between family coancestry matrix (half of the Between-Family Relationship Matrix described in Hamilton (2020) 'Optimal Contribution Selection in Highly Fecund Species With Overlapping Generations').  Row and column names are the FAM identifiers from 'ped'.
+#' @return 'age_class_K_mat' is a matrix containing average coancestries within age classes on the diagonals and between age classes on the off-diagonals.  Row and column names are the FAM identifiers from 'ped'.
 #' @return 'family_inbreeding' is a dataframe listing inbreeding coefficients for individuals within families.'
 #' \itemize{
 #'  \item{'FAM' is the family identifier (character).}
@@ -55,7 +55,7 @@
 #'  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
 #'  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
 #'  }
-# @return 'family_ped' is a data frame with the following columns (class in parentheses):
+#' @return 'family_ped' is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'FAM' is a full-sibling family identifier (character).}
 #'  \item{'SIRE' is the male parent identifier (character).}
