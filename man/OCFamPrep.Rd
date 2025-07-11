@@ -95,8 +95,9 @@ OCFamPrep_output <- OCFam::OCFamPrep(ped = ped,
 )
 
 OCFamPrep_output$plot
-OCFamPrep_output$fam_K_matrix[1:5,1:5]
-OCFamPrep_output$age_class_K_mat
-head(OCFamPrep_output$family_inbreeding)
 OCFamPrep_output$age_class_means
+OCFamPrep_output$age_class_K_mat
+OCFamPrep_output$fam_K_matrix[1:5,1:5]
+head(OCFamPrep_output$family_inbreeding)
+
 }
