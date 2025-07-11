@@ -11,11 +11,11 @@
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
 #'  \item{'INDIV' is the individual identifier (character).}
-#'  \item{'SIRE' is the male parent identifier (character).  Unknown sires should be entered as '0' or NA.}
-#'  \item{'DAM' is the female parent identifier (character).  Unknown sires should be entered as '0' or NA.}
-#'  \item{'FAM' is a full-sibling family identifier (character).}
+#'  \item{'SIRE' is the male parent identifier (character). Unknown sires should be entered as '0' or NA.}
+#'  \item{'DAM' is the female parent identifier (character). Unknown sires should be entered as '0' or NA.}
+#'  \item{'FAM' is a full-sibling family identifier.  May be NA if parents are unknown (character).}
 #'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
-#'  \item{'EBV' is the estimated breeding value. This field may contain missing values (numeric).}
+#'  \item{'EBV' is the estimated breeding value. This field may contain missing values or NA (numeric).}
 #'  }
 #'
 #' @param age_class_names is an data frame specifying names for age classes (class in parentheses):
@@ -88,7 +88,6 @@
 #'                              gene_flow_vector = gene_flow_vector
 #' )
 #'
-#' OCFamPrep_output$plot
 #' OCFamPrep_output$age_class_means
 #' OCFamPrep_output$age_class_K_mat
 #' OCFamPrep_output$fam_K_matrix[1:5,1:5]
@@ -155,13 +154,13 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
     arrange(BORN)
   age_class_N_fams <- as.data.frame(age_class_N_fams)
 
-#  age_class_F <- data.frame(BORN = NA, VARIABLE = NA, MEAN = NA)[-1,]
-#  for(ac in age_classs) {
-#    fams <- family_ped[family_ped$BORN == as.character(ac),"FAM"]
-#    tmp_F <- mean(family_inbreeding[family_inbreeding$FAM %in% fams, "F"])
-#    tmp <- data.frame(BORN = ac, VARIABLE = "Inbreeding (F)", MEAN = tmp_F)
-#    age_class_F <- rbind(age_class_F, tmp)
-#  }
+  #  age_class_F <- data.frame(BORN = NA, VARIABLE = NA, MEAN = NA)[-1,]
+  #  for(ac in age_classs) {
+  #    fams <- family_ped[family_ped$BORN == as.character(ac),"FAM"]
+  #    tmp_F <- mean(family_inbreeding[family_inbreeding$FAM %in% fams, "F"])
+  #    tmp <- data.frame(BORN = ac, VARIABLE = "Inbreeding (F)", MEAN = tmp_F)
+  #    age_class_F <- rbind(age_class_F, tmp)
+  #  }
 
   age_class_F <- left_join(family_ped, family_inbreeding, by = "FAM") %>%
     group_by(BORN) %>%
@@ -191,7 +190,7 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
     gen_interval <- 1
   }
 
-    age_class_K_overlap <-  data.frame(BORN = age_classs, VARIABLE = "Coancestry (overlapping; k)", MEAN = NA)
+  age_class_K_overlap <-  data.frame(BORN = age_classs, VARIABLE = "Coancestry (overlapping; k)", MEAN = NA)
 
   if(!is.null(gene_flow_vector)) {
 
@@ -209,64 +208,69 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
     age_class_means <- rbind(age_class_F, age_class_K, age_class_K_overlap)
   }
 
-    ####################################################################################
-    #Generate plots
-    ####################################################################################
+  ####################################################################################
+  #Generate plots
+  ####################################################################################
 
-    age_class_means$BORN <-  as.numeric(age_class_means$BORN)
+  age_class_means$BORN <-  as.numeric(age_class_means$BORN)
 
-    age_class_means <- dplyr::left_join(age_class_means, age_class_N_fams, by = "BORN")
-    # Filter the data for Coancestry
-    coancestry_data <- subset(age_class_means, VARIABLE == "Coancestry (k)")
+  age_class_means <- dplyr::left_join(age_class_means, age_class_N_fams, by = "BORN")
 
+  if(is.null(age_class_names)) {
+    p <- ggplot(age_class_means, aes(x=BORN, y=MEAN, group=VARIABLE))
+  } else {
+    age_class_means <- dplyr::left_join(age_class_means, age_class_names, by = "BORN")
+    ped <- dplyr::left_join(ped, age_class_names, by = "BORN")
+    family_ped <- dplyr::left_join(family_ped, age_class_names, by = "BORN")
 
-    if(is.null(age_class_names)) {
-      p <- ggplot(age_class_means, aes(x=BORN, y=MEAN, group=VARIABLE))
-    } else {
-      age_class_means <- dplyr::left_join(age_class_means, age_class_names, by = "BORN")
-      ped <- dplyr::left_join(ped, age_class_names, by = "BORN")
-      family_ped <- dplyr::left_join(family_ped, age_class_names, by = "BORN")
+    # Ensure AGE_CLASS_NAME is ordered by BORN
+    age_class_means <- age_class_means[order(age_class_means$BORN), ]
 
-      # Ensure AGE_CLASS_NAME is ordered by BORN
-      age_class_means <- age_class_means[order(age_class_means$BORN), ]
+    # Reassign AGE_CLASS_NAME as a factor, now ordered by BORN
+    age_class_means$AGE_CLASS_NAME <- factor(age_class_means$AGE_CLASS_NAME,
+                                             levels = unique(age_class_means$AGE_CLASS_NAME))
 
-      # Reassign AGE_CLASS_NAME as a factor, now ordered by BORN
-      age_class_means$AGE_CLASS_NAME <- factor(age_class_means$AGE_CLASS_NAME,
-                                               levels = unique(age_class_means$AGE_CLASS_NAME))
+    p <- ggplot(age_class_means, aes(x=AGE_CLASS_NAME, y=MEAN, group=VARIABLE))
 
-      p <- ggplot(age_class_means, aes(x=AGE_CLASS_NAME, y=MEAN, group=VARIABLE))
+  }
 
-    }
-   p <- p +
-      geom_line(aes(color=VARIABLE))+
-      geom_point(aes(color=VARIABLE)) +
+  # Filter the data for Coancestry
+  coancestry_data <- subset(age_class_means, VARIABLE == "Coancestry (k)")
 
-      # Add N_FAMS text labels above the points for Coancestry
-      geom_text(data = coancestry_data,
-                aes(label = N_FAMS),
-                vjust = -0.5,  # Move text above the points
-                color = "black",  # Text color
-                size = 3) +  # Text size
+  p <- p +
+    geom_line(aes(color = VARIABLE), na.rm = TRUE) +
+    geom_point(aes(color = VARIABLE), na.rm = TRUE) +
 
-      # Customizing the theme
-      theme_classic() +
-      theme( # remove the vertical grid lines
-        panel.grid.major.x = element_blank() ,
-        # explicitly set the horizontal lines (or they will disappear too)
-        panel.grid.major.y = element_line(linewidth=.1, color="grey70" ),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)
-      )
+    # Add N_FAMS text labels above the points for Coancestry
+    geom_text(data = coancestry_data,
+              aes(label = N_FAMS),
+              vjust = -0.5,  # Move text above the points
+              color = "black",  # Text color
+              size = 3, # Text size
+              na.rm = TRUE) +
+
+    # Customizing the theme
+    theme_classic() +
+    theme( # remove the vertical grid lines
+      panel.grid.major.x = element_blank() ,
+      # explicitly set the horizontal lines (or they will disappear too)
+      panel.grid.major.y = element_line(linewidth=.1, color="grey70" ),
+      axis.text.x = element_text(angle = 90, vjust = 0.5)
+    )
 
   print(p)
 
-  age_class_means <- data.frame(BORN = age_classs,
-                                N_FAMS = age_class_N_fams$N_FAMS,
-                                INBREEDING = age_class_F$MEAN,
-                                COANCESTRY = age_class_K$MEAN,
-                                OVERLAPPING_COANCESTRY = age_class_K_overlap$MEAN)
+  age_class_means_out <- data.frame(BORN = age_classs,
+                                    N_FAMS = age_class_N_fams$N_FAMS,
+                                    INBREEDING = age_class_F$MEAN,
+                                    COANCESTRY = age_class_K$MEAN,
+                                    OVERLAPPING_COANCESTRY = age_class_K_overlap$MEAN)
+  if(!is.null(age_class_names )) {
+    age_class_means_out <- dplyr::left_join(age_class_names, age_class_means_out, by = "BORN")
+  }
 
   return(list(plot = p,
-              age_class_means = age_class_means,
+              age_class_means = age_class_means_out,
               age_class_K_mat = age_class_K_mat,
               fam_K_matrix = fam_K_matrix,
               family_inbreeding = family_inbreeding,

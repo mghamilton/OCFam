@@ -10,11 +10,11 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
 \item{ped}{is a data frame with the following columns (class in parentheses):
 \itemize{
  \item{'INDIV' is the individual identifier (character).}
- \item{'SIRE' is the male parent identifier (character).  Unknown sires should be entered as '0' or NA.}
- \item{'DAM' is the female parent identifier (character).  Unknown sires should be entered as '0' or NA.}
- \item{'FAM' is a full-sibling family identifier (character).}
+ \item{'SIRE' is the male parent identifier (character). Unknown sires should be entered as '0' or NA.}
+ \item{'DAM' is the female parent identifier (character). Unknown sires should be entered as '0' or NA.}
+ \item{'FAM' is a full-sibling family identifier.  May be NA if parents are unknown (character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
- \item{'EBV' is the estimated breeding value. This field may contain missing values (numeric).}
+ \item{'EBV' is the estimated breeding value. This field may contain missing values or NA (numeric).}
  }}
 
 \item{age_class_names}{is an data frame specifying names for age classes (class in parentheses):
@@ -100,7 +100,6 @@ OCFamPrep_output <- OCFam::OCFamPrep(ped = ped,
                              gene_flow_vector = gene_flow_vector
 )
 
-OCFamPrep_output$plot
 OCFamPrep_output$age_class_means
 OCFamPrep_output$age_class_K_mat
 OCFamPrep_output$fam_K_matrix[1:5,1:5]
