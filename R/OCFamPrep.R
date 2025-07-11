@@ -237,23 +237,7 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
       p <- ggplot(age_class_means, aes(x=AGE_CLASS_NAME, y=MEAN, group=VARIABLE))
 
     }
-    p <- p +
-      geom_line(aes(color=VARIABLE))+
-      geom_point(aes(color=VARIABLE)) +
-      #  theme_bw()  +
-      theme_classic() +
-      theme( # remove the vertical grid lines
-        panel.grid.major.x = element_blank() ,
-        # explicitly set the horizontal lines (or they will disappear too)
-        panel.grid.major.y = element_line(linewidth=.1, color="grey70" ),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)
-      )
-
-
-
-
-
-    p <- p +
+   p <- p +
       geom_line(aes(color=VARIABLE))+
       geom_point(aes(color=VARIABLE)) +
 
@@ -272,9 +256,6 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
         panel.grid.major.y = element_line(linewidth=.1, color="grey70" ),
         axis.text.x = element_text(angle = 90, vjust = 0.5)
       )
-
-
-
 
   print(p)
 
