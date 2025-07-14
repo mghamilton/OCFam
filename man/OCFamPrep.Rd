@@ -86,7 +86,7 @@ This functions provides tables and plot that allows analysis of historic trends 
 \examples{
 #Retrieve example data
 ped <- OCFam::ped
-age_class_names <-  data.frame(AGE_CLASS_NAME = c("Gen_0", "Gen_1", "Gen_2"), BORN = c(1, 2, 3))
+age_class_names <-  data.frame(AGE_CLASS_NAME = c("Founders", "Gen_0", "Gen_1", "Gen_2"), BORN = c(0, 1, 2, 3))
 gene_flow_vector <- c(0.2,0.8)
 
 #Show example data
