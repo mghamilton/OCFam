@@ -100,7 +100,6 @@ OCFam_out_small <- OCFam::OCFam(ped = ped_small,
                              max_parents_per_fam = 4
 )
 
-OCFam_out_small$fit_out$summary
 OCFam_out_small$fit_out$mean
 head(OCFam_out_small$fam_contbn)
 head(OCFam_out_small$parent_contbn)
@@ -119,7 +118,6 @@ OCFam_out_big <- OCFam::OCFam(ped = ped_big,
                              max_parents_per_fam = 4
 )
 
-OCFam_out_big$fit_out$summary
 OCFam_out_big$fit_out$mean
 head(OCFam_out_big$fam_contbn)
 head(OCFam_out_big$parent_contbn)
