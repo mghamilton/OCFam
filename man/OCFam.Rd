@@ -23,7 +23,7 @@ OCFam(
  \item{'FAM' is a full-sibling family identifier (character).}
  \item{'SEX' is the sex of the individual. "male" (or 1 = male), "female" (or 2 = female), NA if unknown.  If one animal is of unknown sex, sex will be ignored (integer or character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
- \item{'EBV' is the estimated breeding value. Values may be NA for individuals if 'AVAIL_BROOD' is FALSE and 'kinship_constraint' is not NA. May be NA for all individuals if 'kinship_constraint' is NA (numeric).}
+ \item{'EBV' is the estimated breeding value (numeric).}
  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
  }}
@@ -86,22 +86,41 @@ This function implements the optimal contributions method of Hamilton (2020) htt
 It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 }
 \examples{
-#Retrieve example data
-ped <- OCFam::ped
-tail(ped)
+#Retrieve small example data
+ped_small <- OCFam::ped_small
+tail(ped_small)
 
 #Run OCFam function
-OCFam_output <- OCFam::OCFam(ped = ped,
+OCFam_out_small <- OCFam::OCFam(ped = ped_small,
                              N_fams = 60,
-                             kinship_constraint = NA,
+                             kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
                              step_interval = 0.1,
-                             gene_flow_vector = NA,
+                             gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
                              min_prop_fams = 0.9,
                              max_parents_per_fam = 4
 )
 
-OCFam_output$fit_out$summary
-OCFam_output$fit_out$mean
-head(OCFam_output$fam_contbn)
-head(OCFam_output$parent_contbn)
+OCFam_out_small$fit_out$summary
+OCFam_out_small$fit_out$mean
+head(OCFam_out_small$fam_contbn)
+head(OCFam_out_small$parent_contbn)
+
+#Retrieve larger example (sex unknown)
+ped_big <- OCFam::ped_big
+tail(ped_big)
+
+#Run OCFam function
+OCFam_out_big <- OCFam::OCFam(ped = ped_big,
+                             N_fams = 120,
+                             kinship_constraint = 0.014,
+                             step_interval = 0.1,
+                             gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
+                             min_prop_fams = 0,
+                             max_parents_per_fam = 4
+)
+
+OCFam_out_big$fit_out$summary
+OCFam_out_big$fit_out$mean
+head(OCFam_out_big$fam_contbn)
+head(OCFam_out_big$parent_contbn)
 }

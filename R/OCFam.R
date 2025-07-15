@@ -12,7 +12,7 @@
 #'  \item{'FAM' is a full-sibling family identifier (character).}
 #'  \item{'SEX' is the sex of the individual. "male" (or 1 = male), "female" (or 2 = female), NA if unknown.  If one animal is of unknown sex, sex will be ignored (integer or character).}
 #'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
-#'  \item{'EBV' is the estimated breeding value. Values may be NA for individuals if 'AVAIL_BROOD' is FALSE and 'kinship_constraint' is not NA. May be NA for all individuals if 'kinship_constraint' is NA (numeric).}
+#'  \item{'EBV' is the estimated breeding value (numeric).}
 #'  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
 #'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
 #'  }
@@ -59,29 +59,46 @@
 #' }
 #' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
-#' #Retrieve example data
-#' ped <- OCFam::ped
-#' tail(ped)
+#' #Retrieve small example data
+#' ped_small <- OCFam::ped_small
+#' tail(ped_small)
 #'
 #' #Run OCFam function
-#' OCFam_output <- OCFam::OCFam(ped = ped,
+#' OCFam_out_small <- OCFam::OCFam(ped = ped_small,
 #'                              N_fams = 60,
-#'                              kinship_constraint = NA,
+#'                              kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
 #'                              step_interval = 0.1,
-#'                              gene_flow_vector = NA,
+#'                              gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
 #'                              min_prop_fams = 0.9,
 #'                              max_parents_per_fam = 4
 #' )
 #'
-#' OCFam_output$fit_out$summary
-#' OCFam_output$fit_out$mean
-#' head(OCFam_output$fam_contbn)
-#' head(OCFam_output$parent_contbn)
+#' OCFam_out_small$fit_out$summary
+#' OCFam_out_small$fit_out$mean
+#' head(OCFam_out_small$fam_contbn)
+#' head(OCFam_out_small$parent_contbn)
+#'
+#' #Retrieve larger example (sex unknown)
+#' ped_big <- OCFam::ped_big
+#' tail(ped_big)
+#'
+#' #Run OCFam function
+#' OCFam_out_big <- OCFam::OCFam(ped = ped_big,
+#'                              N_fams = 120,
+#'                              kinship_constraint = 0.014,
+#'                              step_interval = 0.1,
+#'                              gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
+#'                              min_prop_fams = 0,
+#'                              max_parents_per_fam = 4
+#' )
+#'
+#' OCFam_out_big$fit_out$summary
+#' OCFam_out_big$fit_out$mean
+#' head(OCFam_out_big$fam_contbn)
+#' head(OCFam_out_big$parent_contbn)
 #' @import optiSel
 #' @import AGHmatrix
 #' @import dplyr
-#' @import ggplot2
-#' @export
 
 #Functions that are not base R functions
 # dplyr::left_join
@@ -94,6 +111,7 @@
 
 #Required packages: optiSel, dplyr, AGHmatrix
 
+#' @export
 #Function to optimise contributions at family level
 OCFam  <- function(ped,
                    N_fams, #total families including those already produced
@@ -106,6 +124,17 @@ OCFam  <- function(ped,
   indiv_contbn <- 1/(N_fams*2)
 
   overlapping_gens <-  !is.na(gene_flow_vector)[1]
+
+  #Date check
+  if(overlapping_gens == FALSE) {
+    if(sum(ped[ped$BORN != max(ped$BORN),"AVAIL_BROOD"]) > 0) {
+      stop("If generations are not overlapping, AVAIL_BROOD in 'ped' must be FALSE for all individuals not in the oldest age class")
+    }
+  }
+
+  if(overlapping_gens == TRUE) {
+    stop("OCFam does not yet cope with overlapping generations.  This will be fixed at some point.")
+  }
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
@@ -279,7 +308,7 @@ OCFam  <- function(ped,
 
   cand_fams  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv, "FAM"]))
   cand_fams_in_youngest_age_class  <- unlist(unique(ped[ped$Indiv %in% candidate_parents$Indiv &
-                                                          ped$Born == max(ped$Born), "FAM"]))
+                                                        ped$Born == max(ped$Born), "FAM"]))
 
   fixed_fams <- unlist(unique(ped[ped$Indiv %in% names(lb[lb > 0.1*indiv_contbn]), "FAM"])) #contribution > 0
   fixed_fams_in_youngest_age_class <- fixed_fams[fixed_fams %in% cand_fams_in_youngest_age_class]
@@ -339,9 +368,9 @@ OCFam  <- function(ped,
   #                               ub = ub, lb = lb, opticont_method = opticont_method)
 
   ub_tmp <- ub
- # ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
+  # ub_tmp[ub_tmp >= 0 ] <- 1 #remove constraints in Step 2
   lb_tmp <- lb
- #  lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
+  #  lb_tmp[lb_tmp < 1 ] <- 0 #remove constraints in Step 2
 
   fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
                                ub = ub_tmp, lb = lb_tmp, opticont_method = opticont_method)
@@ -455,7 +484,7 @@ OCFam  <- function(ped,
     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) >= (1 / indiv_contbn) &
        length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
     #if not identifying additional parents then break
-   #     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
+    #     if(length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )) == prev_count) {break}
 
   }
 
@@ -497,7 +526,7 @@ OCFam  <- function(ped,
 
 
 
-    if(sum(is.na(candidate_parents$Sex)) > 0) { #if sex is not defined
+  if(sum(is.na(candidate_parents$Sex)) > 0) { #if sex is not defined
     tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
     N_retain <- 1 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
     N_retain <- round(N_retain,0)
@@ -515,61 +544,61 @@ OCFam  <- function(ped,
     indivs_to_retain <- colnames(A_mat)
     rm(A_mat)
 
-    } else {
+  } else {
 
-     #males##############################################
-      males <- ped[ped$Sex == "male", "Indiv"]
+    #males##############################################
+    males <- ped[ped$Sex == "male", "Indiv"]
 
-      tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-      N_retain_males <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-      N_retain_males <- round(N_retain_males,0)
+    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
+    N_retain_males <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+    N_retain_males <- round(N_retain_males,0)
+    rm(tmp)
+
+    A_mat <- A_mat[rownames(A_mat) %in% males,colnames(A_mat) %in% males]
+
+    while(nrow(A_mat) > N_retain_males) {
+      tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
+      tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
+      tmp <- tmp[names(tmp) %in% males]
+      tmp <- names(tmp[tmp == max(tmp)])
+      A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
       rm(tmp)
-
-      A_mat <- A_mat[rownames(A_mat) %in% males,colnames(A_mat) %in% males]
-
-      while(nrow(A_mat) > N_retain_males) {
-        tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-        tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-        tmp <- tmp[names(tmp) %in% males]
-        tmp <- names(tmp[tmp == max(tmp)])
-        A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
-        rm(tmp)
-      }
-      rm(N_retain_males)
-
-      indivs_to_retain <- colnames(A_mat)
-      rm(A_mat)
-
-
-      #females##############################################
-
-      males_removed <- cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males][!cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males] %in% indivs_to_retain]
-
-      A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed[!cand_parents_fixed %in% males_removed])
-
-      A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
-
-      females <- ped[ped$Sex == "female", "Indiv"]
-
-      tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
-      N_retain_females <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
-      N_retain_females <- round(N_retain_females,0)
-      rm(tmp)
-
-      A_mat <- A_mat[rownames(A_mat) %in% females,colnames(A_mat) %in% females]
-      while(nrow(A_mat) > N_retain_females) {
-        tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
-        tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
-        tmp <- tmp[names(tmp) %in% females]
-        tmp <- names(tmp[tmp == max(tmp)])
-        A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
-        rm(tmp)
-      }
-      rm(N_retain_females)
-
-      indivs_to_retain <- c(indivs_to_retain, colnames(A_mat))
-      rm(A_mat)
     }
+    rm(N_retain_males)
+
+    indivs_to_retain <- colnames(A_mat)
+    rm(A_mat)
+
+
+    #females##############################################
+
+    males_removed <- cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males][!cand_parents_fixed_current_iteration[cand_parents_fixed_current_iteration %in% males] %in% indivs_to_retain]
+
+    A_mat <- optiSel::pedIBD(Pedig, keep.only = cand_parents_fixed[!cand_parents_fixed %in% males_removed])
+
+    A_mat <- A_mat * lb[colnames(A_mat)] / indiv_contbn #weight according to parent contributions
+
+    females <- ped[ped$Sex == "female", "Indiv"]
+
+    tmp <- ped[!is.na(ped$N_AS_PARENT_PREV) & ped$N_AS_PARENT_PREV != 0 & ped$Indiv %in% rownames(A_mat), "N_AS_PARENT_PREV"]
+    N_retain_females <- 0.5 / indiv_contbn +  length(tmp) - sum(tmp) #accounts for greater contribution of some past parents
+    N_retain_females <- round(N_retain_females,0)
+    rm(tmp)
+
+    A_mat <- A_mat[rownames(A_mat) %in% females,colnames(A_mat) %in% females]
+    while(nrow(A_mat) > N_retain_females) {
+      tmp <- colSums(A_mat) + seq.int(0.00000001, 1e-10, length.out = nrow(A_mat)) #add small amount in case some are the same
+      tmp <- tmp[names(tmp) %in% cand_parents_fixed_current_iteration]
+      tmp <- tmp[names(tmp) %in% females]
+      tmp <- names(tmp[tmp == max(tmp)])
+      A_mat <- A_mat[rownames(A_mat) != tmp[1], rownames(A_mat) != tmp[1]]
+      rm(tmp)
+    }
+    rm(N_retain_females)
+
+    indivs_to_retain <- c(indivs_to_retain, colnames(A_mat))
+    rm(A_mat)
+  }
 
   #need to add the total contributions of all individuals to parents
   tmp <- data.frame(Indiv = names(lb)[names(lb) %in% indivs_to_retain],
@@ -671,7 +700,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   }
 
   fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
-                           solver="cccp2")
+                           solver="cccp") #cccp2 tends to start iterations again after finding a solution
   #  }
 
   return(fit)
