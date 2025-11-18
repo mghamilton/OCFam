@@ -17,7 +17,7 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
  \item{'EBV' is the estimated breeding value. This field may contain missing values or NA (numeric).}
  }}
 
-\item{age_class_names}{is an data frame specifying names for age classes (class in parentheses):
+\item{age_class_names}{is a data frame specifying names for age classes (class in parentheses):
 \itemize{
  \item{'AGE_CLASS_NAME' is a name for the age class (character).}
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}

@@ -2,12 +2,6 @@
 
 export(OCFam)
 export(OCFamPrep)
-export(determine_generations)
-export(fam_K_matrix_fun)
-export(get_best_indiv)
-export(get_fam_K_matrix)
-export(get_lb_ub)
-export(run_OC_max_EBV)
 import(AGHmatrix)
 import(dplyr)
 import(ggplot2)
