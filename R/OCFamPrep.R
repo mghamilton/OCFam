@@ -18,7 +18,7 @@
 #'  \item{'EBV' is the estimated breeding value. This field may contain missing values or NA (numeric).}
 #'  }
 #'
-#' @param age_class_names is an data frame specifying names for age classes (class in parentheses):
+#' @param age_class_names is a data frame specifying names for age classes (class in parentheses):
 #' \itemize{
 #'  \item{'AGE_CLASS_NAME' is a name for the age class (character).}
 #'  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
@@ -103,6 +103,12 @@ OCFamPrep <- function(ped, age_class_names = NULL, gene_flow_vector = NULL) {
   library(AGHmatrix)
   library(dplyr)
   library(ggplot2)
+
+  ## ==== DATA CHECKS ==========================================================
+  check_OCFamPrep_inputs(ped = ped,
+                         age_class_names = age_class_names,
+                         gene_flow_vector = gene_flow_vector)
+  ## ===========================================================================
 
   if(length(gene_flow_vector) == 1) {gene_flow_vector <- NULL}
   if(length(age_class_names) == 1) {age_class_names <- NULL}
@@ -362,3 +368,109 @@ get.r <- function(gene_flow_vector) {
               gene_flow_vector = gene_flow_vector))
 }
 
+#' Internal: basic checks on inputs for OCFamPrep()
+#'
+#' Ensures that the input pedigree and optional age-class and gene-flow
+#' information are structurally consistent with what OCFamPrep expects.
+#' @keywords internal
+check_OCFamPrep_inputs <- function(ped, age_class_names, gene_flow_vector) {
+
+  ## ped -----------------------------------------------------------------------
+  if (!is.data.frame(ped)) {
+    stop("'ped' must be a data.frame.")
+  }
+
+  required_cols <- c("INDIV", "SIRE", "DAM", "FAM", "BORN", "EBV")
+  missing_cols  <- setdiff(required_cols, colnames(ped))
+  if (length(missing_cols) > 0) {
+    stop("The following required columns are missing from 'ped': ",
+         paste(missing_cols, collapse = ", "))
+  }
+
+  # Coerce to character where appropriate
+  ped$INDIV <- as.character(ped$INDIV)
+  ped$SIRE  <- as.character(ped$SIRE)
+  ped$DAM   <- as.character(ped$DAM)
+  ped$FAM   <- as.character(ped$FAM)
+
+  if (any(is.na(ped$INDIV) | ped$INDIV == "")) {
+    stop("'INDIV' must not contain NA or empty strings.")
+  }
+
+  if (!is.numeric(ped$BORN)) {
+    stop("'BORN' in 'ped' must be numeric (integer or numeric).")
+  }
+  if (all(is.na(ped$BORN))) {
+    stop("All 'BORN' values in 'ped' are NA.")
+  }
+
+  if (!is.numeric(ped$EBV)) {
+    stop("'EBV' in 'ped' must be numeric (NA allowed).")
+  }
+
+  # At least some families present
+  if (all(is.na(ped$FAM) | ped$FAM == "")) {
+    stop("No valid family identifiers found in 'ped$FAM'.")
+  }
+
+  ## age_class_names -----------------------------------------------------------
+  if (!is.null(age_class_names)) {
+
+    if (!is.data.frame(age_class_names)) {
+      stop("'age_class_names' must be a data.frame when supplied.")
+    }
+
+    required_ac_cols <- c("BORN", "AGE_CLASS_NAME")
+    missing_ac <- setdiff(required_ac_cols, colnames(age_class_names))
+    if (length(missing_ac) > 0) {
+      stop("The following required columns are missing from 'age_class_names': ",
+           paste(missing_ac, collapse = ", "))
+    }
+
+    if (!is.numeric(age_class_names$BORN)) {
+      stop("'BORN' in 'age_class_names' must be numeric.")
+    }
+    if (!is.character(age_class_names$AGE_CLASS_NAME)) {
+      stop("'AGE_CLASS_NAME' in 'age_class_names' must be character.")
+    }
+
+    # All BORN values in age_class_names should appear in ped$BORN
+    if (any(!age_class_names$BORN %in% ped$BORN)) {
+      stop("All 'BORN' values in 'age_class_names' must also appear in 'ped$BORN'.")
+    }
+  }
+
+  ## gene_flow_vector ----------------------------------------------------------
+  if (!is.null(gene_flow_vector)) {
+
+    # Allow a single NA as "no overlapping gens" marker
+    if (length(gene_flow_vector) == 1 && is.na(gene_flow_vector[1])) {
+      return(invisible(TRUE))
+    }
+
+    if (!is.numeric(gene_flow_vector)) {
+      stop("'gene_flow_vector' must be numeric, NULL, or a single NA.")
+    }
+
+    if (any(is.na(gene_flow_vector))) {
+      stop("'gene_flow_vector' must not contain NA, except the single-NA case.")
+    }
+
+    if (any(gene_flow_vector < 0)) {
+      stop("'gene_flow_vector' must have non-negative entries.")
+    }
+
+    if (sum(gene_flow_vector) <= 0) {
+      stop("'gene_flow_vector' must have a positive sum.")
+    }
+
+    n_age_classes <- length(unique(ped$BORN))
+    if (length(gene_flow_vector) > n_age_classes) {
+      stop("'gene_flow_vector' length (", length(gene_flow_vector),
+           ") is greater than the number of age classes in 'ped' (",
+           n_age_classes, ").")
+    }
+  }
+
+  invisible(TRUE)
+}

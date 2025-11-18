@@ -119,6 +119,16 @@ OCFam  <- function(ped,
                    min_prop_fams,
                    max_parents_per_fam) {
 
+    ## ==== DATA CHECKS ==========================================================
+  check_OCFam_ped(ped)
+  check_OCFam_args(N_fams = N_fams,
+                   kinship_constraint = kinship_constraint,
+                   step_interval = step_interval,
+                   gene_flow_vector = gene_flow_vector,
+                   min_prop_fams = min_prop_fams,
+                   max_parents_per_fam = max_parents_per_fam)
+    ## ===========================================================================
+
   indiv_contbn <- 1/(N_fams*2)
 
   overlapping_gens <-  !is.na(gene_flow_vector)[1]
@@ -151,10 +161,24 @@ OCFam  <- function(ped,
   ped[ped$Sex == "0" & !is.na(ped$Sex),"Sex"] <- NA
 
   #Data checks###############################################################################
-  tmp <- ped[ped$AVAIL_BROOD,]
-  if(!(sum(tmp$Sex %in% c("male","female")) == nrow(tmp) |
-       sum(is.na(tmp$Sex)) == nrow(tmp))) {
-    break("SEX must be defined for all individuals where AVAIL_BROOD is TRUE or not defined for all individuals (i.e. = NA)")
+#  tmp <- ped[ped$AVAIL_BROOD,]
+#  if(!(sum(tmp$Sex %in% c("male","female")) == nrow(tmp) |
+#       sum(is.na(tmp$Sex)) == nrow(tmp))) {
+#    break("SEX must be defined for all individuals where AVAIL_BROOD is TRUE or not defined for all individuals (i.e. = NA)")
+#  }
+
+  # Data checks on Sex vs AVAIL_BROOD ##########################################
+  tmp <- ped[ped$AVAIL_BROOD, , drop = FALSE]
+
+  if (nrow(tmp) > 0) {
+    n_def <- sum(tmp$Sex %in% c("male", "female"), na.rm = TRUE)
+    n_na  <- sum( is.na(tmp$Sex))
+
+    ## Either all candidates have Sex defined, or none do
+    if (!(n_def == nrow(tmp) || n_na == nrow(tmp))) {
+      stop("SEX must either be defined as 'male'/'female' (or '1' for male and '2' for female) for all individuals ",
+           "where AVAIL_BROOD is TRUE, or be NA for all such individuals.")
+    }
   }
 
   #  if(length(cand_parents_fixed_initial) >= (1 / indiv_contbn)) {break("Fixed contributions of indivuals equal to or greater than possible number based on indiv_contbn")}
@@ -176,7 +200,10 @@ OCFam  <- function(ped,
 
   candidate_parents <- candidate_parents[!(candidate_parents$EXCLUDE_MAX_PARENTS_PER_FAM),]
 
-  if(nrow(candidate_parents) < 3) {break("Not enough candidate parents.  Must be 3 or more.")}
+  if (nrow(candidate_parents) < 3) {
+    stop("Not enough candidate parents: 'OCFam' requires at least 3 candidate ",
+         "or past parents (rows with AVAIL_OR_PAST_BROOD == TRUE).")
+  }
 
   ################################################################################
   #Compute necessary columns
@@ -661,7 +688,7 @@ OCFam  <- function(ped,
 ################################################################################
 #function to run optiSel::opticont depending on opticont_method
 ################################################################################
-#' @export
+# #' @export
 run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   if(opticont_method == "max.EBV") {
 
@@ -709,7 +736,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 #identify best individual from fams_to_retain
 ################################################################################
 
-#' @export
+# #' @export
 get_best_indiv <- function(fish, additional_fams_to_retain, candidates, candidates_sex = NA, count_male_req = NA, count_female_req = NA) {
   tmp <- fish[order(fish$oc, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
@@ -736,7 +763,7 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidates, candidat
 ################################################################################
 #get family K matrix
 ################################################################################
-#' @export
+# #' @export
 get_fam_K_matrix <- function(ped, cand_fams) {
 
   fam_K_matrix <-  unique(ped[,c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")])
@@ -752,7 +779,7 @@ get_fam_K_matrix <- function(ped, cand_fams) {
 ################################################################################
 #fam_K_matrix_fun
 ################################################################################
-#' @export
+# #' @export
 fam_K_matrix_fun <- function(family_dat) {
   #data
   # class: data.frame
@@ -819,7 +846,7 @@ fam_K_matrix_fun <- function(family_dat) {
 #determine_generations
 ################################################################################
 
-#' @export
+# #' @export
 determine_generations <- function(pedigree) {
 
   pedigree[is.na(pedigree[,2]) , 2] <- 0
@@ -876,7 +903,7 @@ determine_generations <- function(pedigree) {
 }
 
 #get lower and upper bounds
-#' @export
+# #' @export
 get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
 
   #exclude based on max_parents_per_fam
@@ -924,3 +951,176 @@ get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
 
   return(candidate_parents)
 }
+
+#' Internal: basic checks on 'ped' for OCFam()
+#'
+#' Ensures that the pedigree has all required columns and basic
+#' structure/typing for OCFam to work safely.
+#' @keywords internal
+check_OCFam_ped <- function(ped) {
+
+  # Must be a data.frame
+  if (!is.data.frame(ped)) {
+    stop("'ped' must be a data.frame.")
+  }
+
+  # Required columns for OCFam
+  required_cols <- c(
+    "INDIV", "SIRE", "DAM", "FAM",
+    "SEX", "BORN", "EBV",
+    "AVAIL_BROOD", "N_AS_PARENT_PREV"
+  )
+
+  missing_cols <- setdiff(required_cols, colnames(ped))
+  if (length(missing_cols) > 0) {
+    stop("The following required columns are missing from 'ped': ",
+         paste(missing_cols, collapse = ", "))
+  }
+
+  ## ID / family columns -------------------------------------------------------
+  # Coerce to character to avoid factor issues
+  ped$INDIV <- as.character(ped$INDIV)
+  ped$SIRE  <- as.character(ped$SIRE)
+  ped$DAM   <- as.character(ped$DAM)
+  ped$FAM   <- as.character(ped$FAM)
+  ped$SEX   <- as.character(ped$SEX)
+
+  # INDIV must be non-missing and non-empty
+  if (any(is.na(ped$INDIV) | ped$INDIV == "")) {
+    stop("'INDIV' must not contain NA or empty strings.")
+  }
+
+  # Prefer unique IDs (this is usually essential for a pedigree)
+  if (any(duplicated(ped$INDIV))) {
+    stop("'INDIV' contains duplicated identifiers.")
+  }
+
+  ## BORN ----------------------------------------------------------------------
+  if (!is.numeric(ped$BORN)) {
+    stop("'BORN' must be numeric (integer or numeric).")
+  }
+
+  # It is OK for some BORN to be NA for ancestors,
+  # but not for candidate parents (checked later in OCFam).
+  # Here we just forbid *all* being NA, which would be useless.
+  if (all(is.na(ped$BORN))) {
+    stop("All 'BORN' values in 'ped' are NA.")
+  }
+
+  ## EBV -----------------------------------------------------------------------
+  if (!is.numeric(ped$EBV)) {
+    stop("'EBV' must be numeric (NA allowed).")
+  }
+
+  ## AVAIL_BROOD ---------------------------------------------------------------
+  # Accept logical; otherwise try to convert 0/1 to logical with a clear error.
+  if (!is.logical(ped$AVAIL_BROOD)) {
+    # Common case: 0/1 coding
+    if (is.numeric(ped$AVAIL_BROOD) &&
+        all(ped$AVAIL_BROOD %in% c(0, 1, NA))) {
+      ped$AVAIL_BROOD <- ped$AVAIL_BROOD == 1
+    } else {
+      stop("'AVAIL_BROOD' must be logical or numeric 0/1.")
+    }
+  }
+
+  ## N_AS_PARENT_PREV ----------------------------------------------------------
+  if (!is.numeric(ped$N_AS_PARENT_PREV)) {
+    stop("'N_AS_PARENT_PREV' must be numeric/integer.")
+  }
+
+  if (any(ped$N_AS_PARENT_PREV < 0, na.rm = TRUE)) {
+    stop("'N_AS_PARENT_PREV' must be >= 0.")
+  }
+
+  ## Sanity checks on content --------------------------------------------------
+  # At least one candidate parent available in this round
+  n_cand <- sum(ped$AVAIL_BROOD, na.rm = TRUE)
+  if (n_cand == 0) {
+    stop("There are no candidate parents: all 'AVAIL_BROOD' are FALSE/NA.")
+  }
+
+  # At least some defined family IDs somewhere
+  if (all(is.na(ped$FAM) | ped$FAM == "")) {
+    stop("No valid family identifiers found in 'FAM'.")
+  }
+
+  invisible(ped)
+}
+
+#' Internal: basic checks on scalar arguments for OCFam()
+#' @keywords internal
+check_OCFam_args <- function(N_fams,
+                             kinship_constraint,
+                             step_interval,
+                             gene_flow_vector,
+                             min_prop_fams,
+                             max_parents_per_fam) {
+
+  ## N_fams --------------------------------------------------------------------
+  if (length(N_fams) != 1 || !is.numeric(N_fams) ||
+      is.na(N_fams) || N_fams <= 0 || N_fams != as.integer(N_fams)) {
+    stop("'N_fams' must be a single positive integer.")
+  }
+
+  ## kinship_constraint --------------------------------------------------------
+  if (!is.null(kinship_constraint) && !is.na(kinship_constraint)) {
+    if (length(kinship_constraint) != 1 ||
+        !is.numeric(kinship_constraint) ||
+        kinship_constraint < 0 || kinship_constraint > 1) {
+      stop("'kinship_constraint' must be a single numeric in [0,1] or NA.")
+    }
+  }
+
+  ## step_interval -------------------------------------------------------------
+  if (length(step_interval) != 1 || !is.numeric(step_interval) ||
+      is.na(step_interval) || step_interval <= 0 || step_interval > 1) {
+    stop("'step_interval' must be a single numeric > 0 and <= 1.")
+  }
+
+  ## gene_flow_vector ----------------------------------------------------------
+  # For now, OCFam only supports discrete generations and will stop if
+  # overlapping_gens == TRUE. So here we only allow NULL or length-1 NA,
+  # or a numeric vector with non-negative entries and positive sum.
+  if (!is.null(gene_flow_vector)) {
+
+    # Allow a single NA as your "no overlapping gens" marker
+    if (length(gene_flow_vector) == 1 && is.na(gene_flow_vector[1])) {
+      return(invisible(TRUE))
+    }
+
+    if (!is.numeric(gene_flow_vector)) {
+      stop("'gene_flow_vector' must be numeric, NULL, or a single NA.")
+    }
+
+    if (any(is.na(gene_flow_vector))) {
+      stop("'gene_flow_vector' must not contain NA, except the single-NA case.")
+    }
+
+    if (any(gene_flow_vector < 0)) {
+      stop("'gene_flow_vector' must have non-negative entries.")
+    }
+
+    if (sum(gene_flow_vector) <= 0) {
+      stop("'gene_flow_vector' must have a positive sum.")
+    }
+  }
+
+  ## min_prop_fams -------------------------------------------------------------
+  if (length(min_prop_fams) != 1 || !is.numeric(min_prop_fams) ||
+      is.na(min_prop_fams) || min_prop_fams <= 0 || min_prop_fams > 1) {
+    stop("'min_prop_fams' must be a single numeric in (0,1].")
+  }
+
+  ## max_parents_per_fam -------------------------------------------------------
+  if (length(max_parents_per_fam) != 1 ||
+      !is.numeric(max_parents_per_fam) ||
+      is.na(max_parents_per_fam) ||
+      max_parents_per_fam < 1 ||
+      max_parents_per_fam != as.integer(max_parents_per_fam)) {
+    stop("'max_parents_per_fam' must be a single positive integer (>= 1).")
+  }
+
+  invisible(TRUE)
+}
+
