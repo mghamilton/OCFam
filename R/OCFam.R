@@ -140,9 +140,9 @@ OCFam  <- function(ped,
     }
   }
 
-  if(overlapping_gens == TRUE) {
-    stop("OCFam does not yet cope with overlapping generations.  This will be fixed at some point.")
-  }
+#  if(overlapping_gens == TRUE) {
+#    stop("OCFam does not yet cope with overlapping generations.  This will be fixed at some point.")
+#  }
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
