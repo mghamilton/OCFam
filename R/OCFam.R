@@ -688,7 +688,7 @@ OCFam  <- function(ped,
 ################################################################################
 #function to run optiSel::opticont depending on opticont_method
 ################################################################################
-# #' @export
+#' @export
 run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   if(opticont_method == "max.EBV") {
 
@@ -736,7 +736,7 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
 #identify best individual from fams_to_retain
 ################################################################################
 
-# #' @export
+#' @export
 get_best_indiv <- function(fish, additional_fams_to_retain, candidates, candidates_sex = NA, count_male_req = NA, count_female_req = NA) {
   tmp <- fish[order(fish$oc, decreasing = TRUE),]
   tmp <- tmp[tmp$FAM %in% additional_fams_to_retain &
@@ -763,7 +763,7 @@ get_best_indiv <- function(fish, additional_fams_to_retain, candidates, candidat
 ################################################################################
 #get family K matrix
 ################################################################################
-# #' @export
+#' @export
 get_fam_K_matrix <- function(ped, cand_fams) {
 
   fam_K_matrix <-  unique(ped[,c("FAM", "Sire", "FAM_Sire", "Dam", "FAM_Dam")])
@@ -779,7 +779,7 @@ get_fam_K_matrix <- function(ped, cand_fams) {
 ################################################################################
 #fam_K_matrix_fun
 ################################################################################
-# #' @export
+#' @export
 fam_K_matrix_fun <- function(family_dat) {
   #data
   # class: data.frame
@@ -846,7 +846,7 @@ fam_K_matrix_fun <- function(family_dat) {
 #determine_generations
 ################################################################################
 
-# #' @export
+#' @export
 determine_generations <- function(pedigree) {
 
   pedigree[is.na(pedigree[,2]) , 2] <- 0
@@ -903,7 +903,7 @@ determine_generations <- function(pedigree) {
 }
 
 #get lower and upper bounds
-# #' @export
+#' @export
 get_lb_ub <- function(ped, indiv_contbn, max_parents_per_fam) {
 
   #exclude based on max_parents_per_fam
