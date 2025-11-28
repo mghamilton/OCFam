@@ -5,10 +5,10 @@
 \title{Internal: basic checks on scalar arguments for OCFam()}
 \usage{
 check_OCFam_args(
-  N_fams,
   kinship_constraint,
-  step_interval,
-  gene_flow_vector,
+  iterations,
+  sire_count_by_age,
+  dam_count_by_age,
   min_prop_fams,
   max_parents_per_fam
 )
@@ -16,4 +16,3 @@ check_OCFam_args(
 \description{
 Internal: basic checks on scalar arguments for OCFam()
 }
-\keyword{internal}

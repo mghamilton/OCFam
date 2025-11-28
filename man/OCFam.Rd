@@ -6,12 +6,12 @@
 \usage{
 OCFam(
   ped,
-  N_fams,
-  kinship_constraint,
-  step_interval = 0.1,
-  gene_flow_vector,
-  min_prop_fams,
-  max_parents_per_fam
+  sire_count_by_age,
+  dam_count_by_age,
+  kinship_constraint = NA,
+  iterations = 10,
+  min_prop_fams = 0,
+  max_parents_per_fam = 10000
 )
 }
 \arguments{
@@ -28,25 +28,25 @@ OCFam(
  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
  }}
 
-\item{N_fams}{is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_PREV in ped) (integer)}
+\item{sire_count_by_age}{is scalar (discrete generations) or a vector (overlapping generations) representing required sire contributions by age class. For example (overlapping generations), sire_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.}
 
-\item{kinship_constraint}{is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)}
+\item{dam_count_by_age}{is scalar (discrete generations) or a vector (overlapping generations) representing required dams by age class. For example (overlapping generations), dam_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.}
 
-\item{step_interval}{is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)}
+\item{kinship_constraint}{is the maximum value of the mean kinship among families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1; default = NA)}
 
-\item{gene_flow_vector}{is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.}
+\item{iterations}{specifies the number of iterations. The greater the number of iterations specified, the closer the solution will be to the optimum but the longer it will take to run (positive integer; default = 10)}
 
-\item{min_prop_fams}{is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1)}
+\item{min_prop_fams}{is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1; default = 0)}
 
-\item{max_parents_per_fam}{is the maximum number of parents to contribute from each family (integer)}
+\item{max_parents_per_fam}{is the maximum number of parents to contribute from each family (integer; default = 10000)}
 }
 \value{
 'fam_contbn' is a data frame containing details of contributions by family:
 \itemize{
- \item{FAM}
- \item{N_INDIV_TOTAL}
- \item{N_AS_PAST_PARENT}
- \item{N_INDIV}
+ \item{'FAM' is a full-sibling family identifier (character).}
+ \item{'N_INDIV_TOTAL' is the total count of parental contributions to the next year class (integer)}
+ \item{N_AS_PAST_PARENT is the count of past parental contributions to the next year class  (integer).}
+ \item{N_INDIV is the count of parental contributions to the next year class from the current OCFam run.  Equals N_INDIV_TOTAL minus N_AS_PAST_PARENT (integer)}
 }
 
 'parent_contbn' is a data frame containing details of contributions by individual:
@@ -66,7 +66,7 @@ OCFam(
  \item{'BREED' is the species.}
  \item{'MATURE' is sexually mature}
  \item{'IS_CANDIDATE' was considered a candidate parent in OCFam}
- \item{'N_TOTAL_AS_PARENT' is the total count as a parent in the next year class}
+ \item{'N_TOTAL_AS_PARENT' is the total count of parental contributions to the next year class}
  \item{'ADDED_IN_LAST_ITERATION' individual was addes in the last iteration of OCFam.  Would be the first individuals to be removed in necessary.}
 }
 
@@ -79,10 +79,10 @@ OCFam(
  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
 }
 
-'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
+'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel.
 }
 \description{
-This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051
+This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051.
 It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 }
 \examples{
@@ -92,10 +92,10 @@ tail(ped_small)
 
 #Run OCFam function
 OCFam_out_small <- OCFam::OCFam(ped = ped_small,
-                             N_fams = 60,
+                             sire_count_by_age = 60,
+                             dam_count_by_age = 60,
                              kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
-                             step_interval = 0.1,
-                             gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
+                             iterations = 10,
                              min_prop_fams = 0.9,
                              max_parents_per_fam = 4
 )
@@ -110,10 +110,10 @@ tail(ped_big)
 
 #Run OCFam function
 OCFam_out_big <- OCFam::OCFam(ped = ped_big,
-                             N_fams = 120,
+                             sire_count_by_age = c(20, 100),
+                             dam_count_by_age = c(10, 110),
                              kinship_constraint = 0.014,
-                             step_interval = 0.1,
-                             gene_flow_vector = NA, #OCFam doesn't allow overlapping generations yet.
+                             iterations = 10,
                              min_prop_fams = 0,
                              max_parents_per_fam = 4
 )

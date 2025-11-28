@@ -23,7 +23,7 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  }}
 
-\item{gene_flow_vector}{is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.}
+\item{gene_flow_vector}{is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing the assumed parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) assumes 20 percent of parents are four age classes old and 80 percent are three age classes old.}
 }
 \value{
 'plot' is plot of trends in coancestry and inbreeding coefficients
@@ -56,7 +56,7 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
  \item{'EBV' is the estimated breeding value (numeric).}
  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
  \item{'EBV_SIRE' is the estimated breeding value of the SIRE (numeric).}
- \item{'FAM_DAM' is a full-sibling family identifi of the DAM (character).}
+ \item{'FAM_DAM' is a full-sibling family identifier of the DAM (character).}
  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
  }
@@ -69,19 +69,19 @@ OCFamPrep(ped, age_class_names = NULL, gene_flow_vector = NULL)
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
  \item{'EBV_SIRE' is the estimated breeding value of the SIRE (numeric).}
- \item{'FAM_DAM' is a full-sibling family identifi of the DAM (character).}
+ \item{'FAM_DAM' is a full-sibling family identifier of the DAM (character).}
  \item{'EBV_DAM'  is the estimated breeding value of the DAM (numeric).}
  \item{'EBV_FAM' is the mean EBV of the FAM's SIRE and DAM}
  }
 
-'gene_flow_vector' is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) - oldest age class to youngest age class.
+'gene_flow_vector' is a applicable to overlapping generations (if NA discrete generations is assumed).  It is vector representing the assumed parental contributions by age class to the next age class. For example, gene_flow_vector = c(0.2, 0.8, 0, 0) assumes 20 percent of parents are four age classes old and 80 percent are three age classes old.
 
 'r' is a weight vector of age classes; r[i] denotes the long-term contribution of age class i (until lifetime is reached).  See Meuwissen, T. H. E. and A. K. Sonesson. 1998. Maximizing the response of selection with a predefined rate of inbreeding: overlapping generations.
 
 'gen_interval' is the generation interval.
 }
 \description{
-This functions provides tables and plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F)
+This function provides tables and a plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F) across year classes.
 }
 \examples{
 #Retrieve example data

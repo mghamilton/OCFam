@@ -1,7 +1,7 @@
-#' OCFam
+  #' OCFam
 #'
 #' @description
-#' This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051.
+#' This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051
 #' It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 #'
 #' @param ped is a data frame with the following columns (class in parentheses):
@@ -16,18 +16,19 @@
 #'  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
 #'  \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
 #'  }
-#' @param sire_count_by_age is scalar (discrete generations) or a vector (overlapping generations) representing required sire contributions by age class. For example (overlapping generations), sire_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.
-#' @param dam_count_by_age is scalar (discrete generations) or a vector (overlapping generations) representing required dams by age class. For example (overlapping generations), dam_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.
-#' @param kinship_constraint is the maximum value of the mean kinship among families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1; default = NA)
-#' @param iterations specifies the number of iterations. The greater the number of iterations specified, the closer the solution will be to the optimum but the longer it will take to run (positive integer; default = 10)
-#' @param min_prop_fams is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1; default = 0)
-#' @param max_parents_per_fam is the maximum number of parents to contribute from each family (integer; default = 10000)
+##' @param N_fams is the number of families to be generated in the next age class including those already produced (see N_AS_PARENT_PREV in ped) (integer)
+#' @param kinship_constraint is the maximum value of the mean kinship between families in the next age class, while mean EBV is maximised (max.EBV).  If NA there is no constraint placed on kinship and the average kinship is minimised while EBV is not considered (min.fPED) (numeric between 0 and 1)
+#' @param step_interval is a parameter that controls rounding error in individual contributions.  The larger the value the greater the rounding error but the quicker it runs (numeric between 0 and 1)
+#' @param sire_count_by_age is scalar (discrete generations) or a vector (overlapping generations) representing required sires by age class. For example (overlapping generations), sire_count_by_age = c(20, 80, 0, 0) - oldest age class to youngest age class.
+#' @param dam_count_by_age is scalar (discrete generations) or a vector (overlapping generations) representing required dams by age class. For example (overlapping generations), dam_count_by_age = c(20, 80, 0, 0) - oldest age class to youngest age class.
+#' @param min_prop_fams is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1)
+#' @param max_parents_per_fam is the maximum number of parents to contribute from each family (integer)
 #' @return 'fam_contbn' is a data frame containing details of contributions by family:
 #' \itemize{
-#'  \item{'FAM' is a full-sibling family identifier (character).}
-#'  \item{'N_INDIV_TOTAL' is the total count of parental contributions to the next year class (integer)}
-#'  \item{N_AS_PAST_PARENT is the count of past parental contributions to the next year class  (integer).}
-#'  \item{N_INDIV is the count of parental contributions to the next year class from the current OCFam run.  Equals N_INDIV_TOTAL minus N_AS_PAST_PARENT (integer)}
+#'  \item{FAM}
+#'  \item{N_INDIV_TOTAL}
+#'  \item{N_AS_PAST_PARENT}
+#'  \item{N_INDIV}
 #' }
 #' @return 'parent_contbn' is a data frame containing details of contributions by individual:
 #' \itemize{
@@ -46,7 +47,7 @@
 #'  \item{'BREED' is the species.}
 #'  \item{'MATURE' is sexually mature}
 #'  \item{'IS_CANDIDATE' was considered a candidate parent in OCFam}
-#'  \item{'N_TOTAL_AS_PARENT' is the total count of parental contributions to the next year class}
+#'  \item{'N_TOTAL_AS_PARENT' is the total count as a parent in the next year class}
 #'  \item{'ADDED_IN_LAST_ITERATION' individual was addes in the last iteration of OCFam.  Would be the first individuals to be removed in necessary.}
 #' }
 #' @return 'candidate_parents' is a data frame containing details of candidate parents:
@@ -57,7 +58,7 @@
 #'  \item{'UB' is the upper bound of possilbe contribution to the next age class}
 #'  \item{EXCLUDE_MAX_PARENTS_PER_FAM' If TRUE individual is excluded on the basis that there are better parents available from the family to meet the max_parents_per_fam constraint.}
 #' }
-#' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel.
+#' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel:
 #' @examples
 #' #Retrieve small example data
 #' ped_small <- OCFam::ped_small
@@ -65,10 +66,10 @@
 #'
 #' #Run OCFam function
 #' OCFam_out_small <- OCFam::OCFam(ped = ped_small,
+#'                              kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
+#'                              step_interval = 0.1,
 #'                              sire_count_by_age = 60,
 #'                              dam_count_by_age = 60,
-#'                              kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
-#'                              iterations = 10,
 #'                              min_prop_fams = 0.9,
 #'                              max_parents_per_fam = 4
 #' )
@@ -83,10 +84,10 @@
 #'
 #' #Run OCFam function
 #' OCFam_out_big <- OCFam::OCFam(ped = ped_big,
+#'                              kinship_constraint = 0.014,
+#'                              step_interval = 0.1,
 #'                              sire_count_by_age = c(20, 100),
 #'                              dam_count_by_age = c(10, 110),
-#'                              kinship_constraint = 0.014,
-#'                              iterations = 10,
 #'                              min_prop_fams = 0,
 #'                              max_parents_per_fam = 4
 #' )
@@ -107,26 +108,25 @@
 # OCFam::get_best_indiv
 # OCFam::get_fam_K_matrix
 
-###############################################################################
-#Currently OCFam doesn't allow integer contributions to deviate from 0 or 1
-# - in mass spawning, may need to force minimum contributions to be > 1 for example???
-###############################################################################
+#Required packages: optiSel, dplyr, AGHmatrix
 
 #' @export
 #Function to optimise contributions at family level
 OCFam  <- function(ped,
+                   # N_fams, #total families including those already produced
+                   kinship_constraint, #if NA opticont_method = "min.fPED" else opticont_method = "max.EBV"
+                   step_interval = 0.1,
+                   # gene_flow_vector, #if NA then discrete generations
                    sire_count_by_age,
                    dam_count_by_age,
-                   kinship_constraint = NA, #if NA opticont_method = "min.fPED" else opticont_method = "max.EBV"
-                   iterations = 10,
-                   min_prop_fams = 0,
-                   max_parents_per_fam = 10000) {
+                   min_prop_fams,
+                   max_parents_per_fam) {
 
   ## ==== DATA CHECKS ==========================================================
 
   OCFam::check_OCFam_ped(ped)
   OCFam::check_OCFam_args(kinship_constraint = kinship_constraint,
-                          iterations = iterations,
+                          step_interval = step_interval,
                           sire_count_by_age = sire_count_by_age,
                           dam_count_by_age = dam_count_by_age,
                           min_prop_fams = min_prop_fams,
@@ -136,7 +136,6 @@ OCFam  <- function(ped,
 
   N_fams <- sum(sire_count_by_age)
   indiv_contbn <- 1/(N_fams*2)
-  step_interval <- 1/iterations
 
   overlapping_gens <-  length(sire_count_by_age) > 1
 
@@ -377,7 +376,7 @@ OCFam  <- function(ped,
   }
 
   ################################################################################
-  #generate candidate list with one individual for Min_N_fams_selection_to_retain family (least related families)
+  #1. generate candidate list with one individual for Min_N_fams_selection_to_retain family (least related families)
   ################################################################################
 
   #identify candidate families
@@ -442,7 +441,7 @@ OCFam  <- function(ped,
   lb_orig <- lb
 
   ################################################################################
-  #identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
+  #2. identify individuals that contribute more than indiv_contbn and add to list of cand_parents_fixed
   ################################################################################
 
   #  fit <- OCFam::run_OC_max_EBV(cand = cand, kinship_constraint = kinship_constraint,
@@ -471,7 +470,7 @@ OCFam  <- function(ped,
 #  lb <- lb[names(lb) %in%  names(lb_orig)]
 
   ################################################################################
-  #add to list of cand_parents_fixed the best individual from families highly represented in OC
+  #3.  add to list of cand_parents_fixed the best individual from families highly represented in OC
   #      - add individuals consecutively with families highly represented in OC fixed first
   ################################################################################
 
@@ -490,11 +489,10 @@ OCFam  <- function(ped,
     prev_count <- length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration ))
 
     print(paste("Count parents previous iteration =",length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )), "of", 1 / indiv_contbn))
-    print(paste("indiv_contbn (1 / N_parents) = ",indiv_contbn))
-    print(paste("Iteration = ", iterations - adj/step_interval + 1))
-    print(paste("Threshold adjustment (adj) = ",adj))
-#    print(paste("max_sum_oc = ",max_sum_oc))
-    print(paste("Threshold for fixing contributions: continuous_contbn * adj = ",indiv_contbn * adj))
+    print(paste("indiv_contbn = ",indiv_contbn))
+    print(paste("Iteration adjustment = ",adj))
+    print(paste("max_sum_oc = ",max_sum_oc))
+    print(paste("indiv_contbn * adj = ",indiv_contbn * adj))
 
     if(max_sum_oc > (indiv_contbn * adj)) {
 
@@ -618,19 +616,17 @@ OCFam  <- function(ped,
 
   print("FINAL ITERATION")
   print(paste("Count parents previous iteration =",length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )), "of", 1 / indiv_contbn))
-  print(paste("indiv_contbn (1 / N_parents) = ",indiv_contbn))
-  print(paste("Iteration = ", iterations - final_adj/step_interval + 1))
-  print(paste("Threshold adjustment (adj) = ",final_adj))
-#  print(paste("max_sum_oc = ",max_sum_oc))
-  print(paste("Threshold for fixing contributions: continuous_contbn * adj = ",indiv_contbn * final_adj))
+  print(paste("indiv_contbn = ",indiv_contbn))
+  print(paste("Iteration adjustment = ",final_adj))
+  print(paste("max_sum_oc = ",max_sum_oc))
+  print(paste("indiv_contbn * adj = ",indiv_contbn * final_adj))
 
   fit$final.step <-  list(
     c("Count parents previous iteration =",length(c(cand_parents_fixed_current_iteration, cand_parents_fixed_past_iteration )), "of", 1 / indiv_contbn),
-    c("indiv_contbn (1 / N_parents) = ",indiv_contbn),
-    c("Iteration = ", iterations - final_adj/step_interval + 1),
-    c("Threshold adjustment (adj) = ",final_adj),
-#    c("max_sum_oc = ",max_sum_oc),
-    c("Threshold for fixing contributions: continuous_contbn * adj = ",indiv_contbn * final_adj))
+    c("indiv_contbn = ",indiv_contbn),
+    c("Iteration adjustment = ",final_adj),
+    c("max_sum_oc = ",max_sum_oc),
+    c("indiv_contbn * adj = ",indiv_contbn * final_adj))
 
   fit_out <- fit[c("info", "summary", "mean", "bc", "obj.fun", "final.step")]
 
@@ -743,19 +739,10 @@ run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
   con <- list(ub = ub,
               lb = lb)
 
-#  fit <- optiSel::opticont(method = opticont_method,
-#                           cand = cand,
-#                           con = con,
-#                           solver="cccp") #cccp2 tends to start iterations again after finding a solution
-
-  fit <- suppressWarnings(
-    optiSel::opticont(method = opticont_method,
-                      cand = cand,
-                      con = con,
-                      solver = "cccp")  # cccp2 tends to restart iterations
-  )
-
-
+  fit <- optiSel::opticont(method = opticont_method,
+                           cand = cand,
+                           con = con,
+                           solver="cccp") #cccp2 tends to start iterations again after finding a solution
   #  }
 
   return(fit)
@@ -933,7 +920,7 @@ get_best_indiv_AI <- function(fish,
         count_male_req_by_age <- c(count_male_req_by_age, extra)
       }
     }
-    ## weâ€™ll just use count_male_req_by_age as total_req_by_age internally
+    ## we’ll just use count_male_req_by_age as total_req_by_age internally
   }
 
   ## selection loop -----------------------------------------------------------
@@ -1308,19 +1295,19 @@ check_OCFam_ped <- function(ped) {
 
     ## Rule 1: Either all NA OR all defined
     if (all(is.na(sex_vec))) {
-      ## Sex-unknown scenario (allowed) â€” no parent-role checks possible
+      ## Sex-unknown scenario (allowed) — no parent-role checks possible
       warning("All SEX values are NA: operating in sex-unknown mode. Cannot verify consistency of historical Sire/Dam roles.",
               call. = FALSE)
 
     } else if (any(is.na(sex_vec))) {
-      ## Mixed case â€” not allowed
+      ## Mixed case — not allowed
       stop("Some individuals have SEX = NA while others have defined SEX. ",
            "Either define SEX for all individuals, or set all SEX = NA.",
            call. = FALSE)
 
     } else {
 
-      ## Sex is fully defined â€” perform Sire and Dam consistency checks
+      ## Sex is fully defined — perform Sire and Dam consistency checks
 
       ## Create lookup: Indiv ? Sex
       sex_by_id <- ped$SEX
@@ -1378,7 +1365,7 @@ check_OCFam_ped <- function(ped) {
 #' Internal: basic checks on scalar arguments for OCFam()
 #' @export
 check_OCFam_args <- function(kinship_constraint,
-                             iterations,
+                             step_interval,
                              sire_count_by_age,
                              dam_count_by_age,
                              min_prop_fams,
@@ -1399,11 +1386,10 @@ check_OCFam_args <- function(kinship_constraint,
     }
   }
 
-  ## iterations -------------------------------------------------------------
-  if (length(iterations) != 1 || !is.numeric(iterations) ||
-      length(iterations) != 1 || !isTRUE(all.equal(iterations, round(iterations))) ||
-      is.na(iterations) || iterations <= 0) {
-    stop("'iterations' must be a postive integer")
+  ## step_interval -------------------------------------------------------------
+  if (length(step_interval) != 1 || !is.numeric(step_interval) ||
+      is.na(step_interval) || step_interval <= 0 || step_interval > 1) {
+    stop("'step_interval' must be a single numeric > 0 and <= 1.")
   }
 
   ## sire_count_by_age and dam_count_by_age ----------------------------------------------------------

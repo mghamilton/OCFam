@@ -10,4 +10,3 @@ check_OCFam_ped(ped)
 Ensures that the pedigree has all required columns and basic
 structure/typing for OCFam to work safely.
 }
-\keyword{internal}
