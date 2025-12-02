@@ -330,9 +330,9 @@ OCFam  <- function(ped,
 
     #  Pedig[Pedig$EBV == 0,"EBV"] <- runif(nrow(Pedig[Pedig$EBV == 0,]))
     rownames(Pedig) <- Pedig$Indiv
-    Pedig$oldest_age_r_vector <- 0
-    Pedig[Pedig$Born == min(Pedig[Pedig$AVAIL_OR_PAST_PARENT, "Born"]), "oldest_age_r_vector"] <- 1 #oldest YC to 1
-    Pedig$oldest_age_r_vector_2 <- Pedig$oldest_age_r_vector
+  #  Pedig$oldest_age_r_vector <- 0
+  #  Pedig[Pedig$Born == min(Pedig[Pedig$AVAIL_OR_PAST_PARENT, "Born"]), "oldest_age_r_vector"] <- 1 #oldest YC to 1
+  #  Pedig$oldest_age_r_vector_2 <- Pedig$oldest_age_r_vector
 
     cand <- optiSel::candes(phen=Pedig[Pedig$Indiv %in% rownames(fPED),], #c("Indiv",	"Sire",	"Dam",	"Sex",	"Breed",	"Born",		"EBV",	"isCandidate", "oldest_age_r_vector", "oldest_age_r_vector_2")],
                             fPED=fPED,
