@@ -11,7 +11,8 @@ OCFam(
   kinship_constraint = NA,
   iterations = 10,
   min_prop_fams = 0,
-  max_parents_per_fam = 10000
+  max_parents_per_fam = 10000,
+  fast = TRUE
 )
 }
 \arguments{
@@ -25,10 +26,10 @@ OCFam(
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'EBV' is the estimated breeding value (numeric).}
  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
- \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+ \item{'AVAIL_PARENT' is TRUE if the individual is candidate parent of next age class (logical).}
  }}
 
-\item{sire_count_by_age}{is scalar (discrete generations) or a vector (overlapping generations) representing required sire contributions by age class. For example (overlapping generations), sire_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.}
+\item{sire_count_by_age}{is scalar (discrete generations) or a vector (overlapping generations) representing required sires by age class. For example (overlapping generations), sire_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.}
 
 \item{dam_count_by_age}{is scalar (discrete generations) or a vector (overlapping generations) representing required dams by age class. For example (overlapping generations), dam_count_by_age = c(20, 80, 0, 0) - oldest parental age class to youngest age class.}
 
@@ -39,14 +40,16 @@ OCFam(
 \item{min_prop_fams}{is the proportion of families to be retained (i.e. to contribute at least one parent) from the oldest age class with parental candidates (numeric between 0 and 1; default = 0)}
 
 \item{max_parents_per_fam}{is the maximum number of parents to contribute from each family (integer; default = 10000)}
+
+\item{fast}{when TRUE, only candidate parents with the highest estimated breeding values (EBVs) within each family are retained as candidate parents, up to the limit defined by max_parents_per_fam (logical; default = TRUE)}
 }
 \value{
 'fam_contbn' is a data frame containing details of contributions by family:
 \itemize{
  \item{'FAM' is a full-sibling family identifier (character).}
- \item{'N_INDIV_TOTAL' is the total count of parental contributions to the next year class (integer)}
- \item{N_AS_PAST_PARENT is the count of past parental contributions to the next year class  (integer).}
- \item{N_INDIV is the count of parental contributions to the next year class from the current OCFam run.  Equals N_INDIV_TOTAL minus N_AS_PAST_PARENT (integer)}
+ \item{'N_INDIV_TOTAL' is the total count of parental contributions to the next age class (integer)}
+ \item{N_AS_PAST_PARENT is the count of past parental contributions to the next age class  (integer).}
+ \item{N_INDIV is the count of parental contributions to the next age class from the current OCFam run.  Equals N_INDIV_TOTAL minus N_AS_PAST_PARENT (integer)}
 }
 
 'parent_contbn' is a data frame containing details of contributions by individual:
@@ -58,15 +61,15 @@ OCFam(
  \item{'BORN' integer indicating age class.  May be the year of birth if one age class per year or an integer indicating the sequence of age classes (integer).}
  \item{'EBV' is the estimated breeding value (numeric).}
  \item{'N_AS_PARENT_PREV' is the number of families in the next age class previously contributed to (integer).}
- \item{'AVAIL_BROOD' is TRUE if the individual is candidate parent of next age class (logical).}
+ \item{'AVAIL_PARENT' is TRUE if the individual is candidate parent of next age class (logical).}
  \item{'RANK' individual rank based on EBV}
- \item{'AVAIL_OR_PAST_BROOD' is TRUE if AVAIL_BROOD is TRUE or the individual has previously been used as a parent in the next age class.}
+ \item{'AVAIL_OR_PAST_PARENT' is TRUE if AVAIL_PARENT is TRUE or the individual has previously been used as a parent in the next age class.}
  \item{'FAM_SIRE' is a full-sibling family identifier of the SIRE (character).}
  \item{'FAM_DAM' is a full-sibling family identifier of the DAM (character).}
  \item{'BREED' is the species.}
  \item{'MATURE' is sexually mature}
  \item{'IS_CANDIDATE' was considered a candidate parent in OCFam}
- \item{'N_TOTAL_AS_PARENT' is the total count of parental contributions to the next year class}
+ \item{'N_TOTAL_AS_PARENT' is the total count of parental contributions to the next age class}
  \item{'ADDED_IN_LAST_ITERATION' individual was addes in the last iteration of OCFam.  Would be the first individuals to be removed in necessary.}
 }
 
@@ -82,8 +85,7 @@ OCFam(
 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel.
 }
 \description{
-This function implements the optimal contributions method of Hamilton (2020) https://doi.org/10.1093/jhered/esaa051.
-It also addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
+This function addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 }
 \examples{
 #Retrieve small example data
@@ -97,7 +99,8 @@ OCFam_out_small <- OCFam::OCFam(ped = ped_small,
                              kinship_constraint = NA, #This is a small example.  Cannot constrain kinship_constraint.
                              iterations = 10,
                              min_prop_fams = 0.9,
-                             max_parents_per_fam = 4
+                             max_parents_per_fam = 4,
+                             fast = TRUE
 )
 
 OCFam_out_small$fit_out$mean
@@ -115,7 +118,8 @@ OCFam_out_big <- OCFam::OCFam(ped = ped_big,
                              kinship_constraint = 0.014,
                              iterations = 10,
                              min_prop_fams = 0,
-                             max_parents_per_fam = 4
+                             max_parents_per_fam = 4,
+                             fast = TRUE
 )
 
 OCFam_out_big$fit_out$mean

@@ -6,7 +6,7 @@
 #' OCFamPrep
 #'
 #' @description
-#' This function provides tables and a plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F) across year classes.
+#' This function provides tables and a plot that allows analysis of historic trends in average coancestry (k) and inbreeding (Wrights inbreeding coefficient, F) across age classes.
 #'
 #' @param ped is a data frame with the following columns (class in parentheses):
 #' \itemize{
