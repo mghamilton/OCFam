@@ -750,49 +750,42 @@ OCFam  <- function(ped,
 ################################################################################
 #' @export
 run_OC_max_EBV <- function(cand, kinship_constraint, ub, lb, opticont_method) {
+  if(opticont_method == "max.EBV") {
 
-  #  if(opticont_method == "max.EBV") {
-  #
-  #    if(nrow(cand$classes[cand$classes$Group == "cohort"]) == 1 |
-  #       nrow(cand$classes[cand$classes$Group != "cohort"]) == 2) { #overlapping = FALSE
-  #      con <- list(ub.fPED = kinship_constraint,
-  #                  ub = ub,
-  #                  lb = lb)
-  #    } else {
-  #
-  #      con <- list(ub.fPED = kinship_constraint,
-  #                  ub = ub,
-  #                  lb = lb,
-  #                  ub.oldest_age_r_vector = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"],
-  #                  lb.oldest_age_r_vector_2 = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"]) #fix to r vector value of the oldest age class
-  #    }
-  #
-  #  }
-  #
-  #
-  #  if(opticont_method == "min.fPED") {
-  #
-  #    if(nrow(cand$classes[cand$classes$Group == "cohort"]) == 1 |
-  #       nrow(cand$classes[cand$classes$Group != "cohort"]) == 2) { #overlapping = FALSE
-  #      con <- list(ub = ub,
-  #                  lb = lb)
-  #    } else {
-  #
-  #      con <- list(ub = ub,
-  #                  lb = lb,
-  #                  ub.oldest_age_r_vector = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"],
-  #                  lb.oldest_age_r_vector_2 = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"]) #fix to the contribution of the oldest age class
-  #    }
-  #  }
+#    if(nrow(cand$classes[cand$classes$Group == "cohort"]) == 1 |
+#       nrow(cand$classes[cand$classes$Group != "cohort"]) == 2) { #overlapping = FALSE
+      con <- list(ub.fPED = kinship_constraint,
+                  ub = ub,
+                  lb = lb)
+#    } else {
+#
+#      con <- list(ub.fPED = kinship_constraint,
+#                  ub = ub,
+#                  lb = lb,
+#                  ub.oldest_age_r_vector = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"],
+#                  lb.oldest_age_r_vector_2 = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"]) #fix to r vector value of the oldest year class
+#    }
 
-  con <- list(ub = ub,
-              lb = lb)
+  }
 
-    fit <- optiSel::opticont(method = opticont_method,
-                             cand = cand,
-                             con = con,
-                             solver="cccp") #cccp2 tends to start iterations again after finding a solution
+  if(opticont_method == "min.fPED") {
 
+#    if(nrow(cand$classes[cand$classes$Group == "cohort"]) == 1 |
+#       nrow(cand$classes[cand$classes$Group != "cohort"]) == 2) { #overlapping = FALSE
+      con <- list(ub = ub,
+                  lb = lb)
+#    } else {
+#
+#      con <- list(ub = ub,
+#                  lb = lb,
+#                  ub.oldest_age_r_vector = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"],
+#                  lb.oldest_age_r_vector_2 = cand$classes[cand$classes$age == max(cand$classes$age)  ,"cont0"]) #fix to the contribution of the oldest year class
+#    }
+
+  }
+
+  fit <- optiSel::opticont(method = opticont_method, cand = cand, con = con,
+                           solver="cccp") #cccp2 tends to start iterations again after finding a solution
   #  }
 
   return(fit)
