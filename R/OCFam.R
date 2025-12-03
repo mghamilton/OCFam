@@ -616,12 +616,9 @@ OCFam  <- function(ped,
                 fam_counts <- aggregate(Indiv ~ FAM, data = fam_counts, FUN = length)
                 families_below_threshold <- fam_counts$FAM[fam_counts$Indiv < max_parents_per_fam]
                 fams_to_retain <- fams_to_retain[fams_to_retain %in% families_below_threshold]
+                rm(families_below_threshold)
               }
-              rm(fam_counts, families_below_threshold)
-
-
-
-
+              rm(fam_counts)
           }
         }
         #if(adj != 0) {
