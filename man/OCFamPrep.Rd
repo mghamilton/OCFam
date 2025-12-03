@@ -94,7 +94,7 @@ tail(ped_small)
 age_class_names
 gene_flow_vector
 
-#Run OCFam function
+#Run OCFamPrep function
 OCFamPrep_output <- OCFam::OCFamPrep(ped = ped_small,
                              age_class_names = age_class_names,
                              gene_flow_vector = gene_flow_vector
