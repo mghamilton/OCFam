@@ -60,3 +60,7 @@ dependencies:
 > force = TRUE)
 >
 > library(OCFam)
+
+## Manual
+Hamilton, MG. 2025. OCFam (Version 1.6): An R package for optimal 
+contribution selection in highly fecund species. WorldFish. Penang, Malaysia.
