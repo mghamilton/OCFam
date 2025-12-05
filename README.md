@@ -63,4 +63,5 @@ dependencies:
 
 ## Manual
 Hamilton, MG. 2025. OCFam (Version 1.6): An R package for optimal 
-contribution selection in highly fecund species. WorldFish. Penang, Malaysia.
+contribution selection in highly fecund species. WorldFish. Penang, Malaysia. 
+https://doi.org/20.500.12348/6728
