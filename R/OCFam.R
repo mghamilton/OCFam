@@ -151,9 +151,25 @@ OCFam  <- function(ped,
     }
   }
 
-  #  if(overlapping_gens == TRUE) {
-  #    stop("OCFam does not yet cope with overlapping generations.  This will be fixed at some point.")
-  #  }
+  if (length(sire_count_by_age) != length(dam_count_by_age)) {
+    stop("sire_count_by_age must be the same length as dam_count_by_age")
+  }
+
+  if (overlapping_gens == TRUE) {
+
+    n_age_classes <- length(sire_count_by_age)
+
+    born_classes <- sort(unique(ped$BORN))
+    required_age_classes <- tail(born_classes, n_age_classes)
+
+    avail_age_classes <- sort(unique(ped$BORN[ped$AVAIL_PARENT == TRUE]))
+
+    if (!identical(required_age_classes, avail_age_classes)) {
+      stop("AVAIL_PARENT must be TRUE only for individuals in the most recent age classes in the BORN field of ped represented in the sire_count_by_age and dam_count_by_age. For example, if sire_count_by_age and dam_count_by_age have 4 elements, AVAIL_PARENT must be TRUE for individuals in the most recent 4 BORN classes only.")
+    }
+
+    rm(n_age_classes, born_classes, required_age_classes, avail_age_classes)
+  }
 
   #change names for optiSel
   colnames(ped)[colnames(ped) == "INDIV"] <- "Indiv"
@@ -340,10 +356,10 @@ OCFam  <- function(ped,
 
     #set initial ub and lb
     ub <- setNames(candidate_parents$ub, candidate_parents$Indiv)
-    ub <- ub[cand$phen$Indiv]
+    ub <- ub[cand$phen[cand$phen$isCandidate,"Indiv"]]
 
     lb <- setNames(candidate_parents$lb, candidate_parents$Indiv)
-    lb <- lb[cand$phen$Indiv]
+    lb <- lb[cand$phen[cand$phen$isCandidate,"Indiv"]]
 
   }
 
@@ -365,10 +381,10 @@ OCFam  <- function(ped,
 
     #set initial ub and lb
     ub <- setNames(candidate_parents$ub, candidate_parents$Indiv)
-    ub <- ub[cand$phen$Indiv]
+    ub <- ub[cand$phen[cand$phen$isCandidate,"Indiv"]]
 
     lb <- setNames(candidate_parents$lb, candidate_parents$Indiv)
-    lb <- lb[cand$phen$Indiv]
+    lb <- lb[cand$phen[cand$phen$isCandidate,"Indiv"]]
   }
 
   if(is.na(kinship_constraint)) {
@@ -564,10 +580,10 @@ OCFam  <- function(ped,
               lb[names(lb) %in% cand_parents_fixed_current_iteration] <- indiv_contbn_males - 1e-10
 
             }
-              ub <- ub[cand$phen$Indiv] #reorder
+              ub <- ub[cand$phen[cand$phen$isCandidate,"Indiv"]] #reorder
               ub <- ub[names(ub) %in%  names(ub_orig)]
 
-              lb <- lb[cand$phen$Indiv] #reorder
+              lb <- lb[cand$phen[cand$phen$isCandidate,"Indiv"]] #reorder
               lb <- lb[names(lb) %in%  names(lb_orig)]
 
             #check if contributions within sex-age classes are met
@@ -604,10 +620,10 @@ OCFam  <- function(ped,
                 }
               }
 
-              ub <- ub[cand$phen$Indiv] #reorder
+              ub <- ub[cand$phen[cand$phen$isCandidate,"Indiv"]] #reorder
               ub <- ub[names(ub) %in%  names(ub_orig)]
 
-              lb <- lb[cand$phen$Indiv] #reorder
+              lb <- lb[cand$phen[cand$phen$isCandidate,"Indiv"]] #reorder
               lb <- lb[names(lb) %in%  names(lb_orig)]
 
               #exclude families that have reached max_parents_per_fam
