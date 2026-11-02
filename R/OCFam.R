@@ -60,6 +60,11 @@
 #' }
 #' @return 'fit_out' is a vector containing details of the constraints applied in the implementation of optiSel.
 #' @examples
+#' #WARNING: THE LARGER EXAMPLE TAKES A LONG TIME TO RUN.
+#' #IT IS BEST TO COPY AND PASTE THE EXAMPLES INTO THE CONSOLE OR YOUR SCRIPT
+#' #THIS ALLOWS YOU TO MONITOR PROGRESS.
+#' #IT IS NOT ADVISABLE TO USE THE "Run examples" LINK.
+
 #' #Retrieve small example data
 #' ped_small <- OCFam::ped_small
 #' tail(ped_small)

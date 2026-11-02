@@ -88,6 +88,8 @@ OCFam(
 This function addresses the rounding issue associated with standard optimal contributions, particularly in highly fecund species in which relatively few families are generated (or parents are used).
 }
 \examples{
+WARNING: THE LARGER EXAMPLE TAKES A LONG TIME TO RUN.
+IT IS BEST TO COPY AND PASTE THE EXAMPLES INTO THE CONSOLE OR YOUR SCRIPT RATHER THAN USING THE "Run examples" LINK. THIS ALLOWS YOU TO MONITOR PROGRESS.
 #Retrieve small example data
 ped_small <- OCFam::ped_small
 tail(ped_small)
