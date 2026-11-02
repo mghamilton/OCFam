@@ -953,6 +953,7 @@ fam_K_matrix_fun <- function(family_dat) {
   tmp <- tmp[tmp[,"Indiv_id"] != 0,]
   tmp[is.na(tmp[,"Sire"]),"Sire"] <- 0
   tmp[is.na(tmp[,"Dam"]),"Dam"] <- 0
+  tmp <- as.data.frame(tmp)
   K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
   rm(tmp)
 
