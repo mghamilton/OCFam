@@ -330,6 +330,7 @@ OCFam_fam_K_matrix <- function(family_ped) {
   # K_matrix_families      <- nadiv::makeA(fam_pedigree[,1:3])/2
   tmp <- fam_pedigree
   tmp[is.na(tmp)] <- 0
+  tmp <- as.data.frame(tmp)
   K_matrix_families      <- AGHmatrix::Amatrix(tmp[,1:3], ploidy=2)/2
   rm(tmp)
 
